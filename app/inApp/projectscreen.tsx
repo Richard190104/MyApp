@@ -5,8 +5,6 @@ import TopBar from "@/components/topBar";
 import { useEffect, useState } from "react";
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { ipAddr } from "@/components/backendip";
-import { MaterialIcons } from '@expo/vector-icons';
-import { getTeamMembers } from "@/components/getUser";
 import { useFocusEffect } from '@react-navigation/native';
 import React from "react";
 
@@ -30,12 +28,11 @@ const TeamScreen = () => {
       React.useCallback(() => {
         const fetchProjectTasks = async () => {
           try {
-            const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.id}`);
+            const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`);
             const data = await response.json();
             if (Array.isArray(data)) {
               setTasks(data);
               setProgress(calculate_percentage(data));
-              console.log(data);
             }
           } catch (error) {
             console.error("Error fetching project tasks:", error);
@@ -43,7 +40,7 @@ const TeamScreen = () => {
         };
     
         fetchProjectTasks();
-      }, [params.id])
+      }, [params.project_id])
     );
     
       
@@ -56,7 +53,7 @@ const TeamScreen = () => {
               onPress={() => setChecked(!checked)}
             >
               <Text style={styles.taskText}>{task.name}</Text>
-              {task.assigned_to === Number(params.userID) && (<Ionicons name="person-outline" size={24} color="black" />
+              {task.assigned_to === Number(params.user_id) && (<Ionicons name="person-outline" size={24} color="black" />
               )}    
             </TouchableOpacity>
           );
@@ -64,7 +61,6 @@ const TeamScreen = () => {
 
     const TaskItem = ({ task }: { task: { id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean; parent_task_id: number } }) => {
       const [checked, setChecked] = useState(task.completed);
-      
       const toggleCheckbox = () => {
         setChecked(!checked);
         task.completed = !checked;
@@ -89,7 +85,7 @@ const TeamScreen = () => {
       };
       
       return (
-        <TouchableOpacity
+        <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/taskScreen', params: {team_name: params.team_name,project_id: params.project_id, team_id: params.team_id, task_id: task.id, task_name: task.name, task_description: task.description, task_assigned_to: task.assigned_to, task_deadline: task.deadline ? task.deadline.toString() : '', task_completed: task.completed ? task.completed.toString() : '' }})}
         style={styles.taskContainer}
         >
         <TouchableOpacity
@@ -98,8 +94,8 @@ const TeamScreen = () => {
         >
           {checked && <Ionicons name="checkmark" size={16} color="white" />}
         </TouchableOpacity>
-        <Text style={styles.taskText}>{task.name}</Text>
-        {task.assigned_to === Number(params.userID) && (<Ionicons name="person-outline" size={24} color="black" />)}
+          <Text style={styles.taskText}>{task.name}</Text>
+        {task.assigned_to === Number(params.user_id) && (<Ionicons name="person-outline" size={24} color="black" />)}
         </TouchableOpacity>
       );
       };
@@ -111,7 +107,7 @@ const TeamScreen = () => {
     <View style={styles.MainContainer}>
         <View style={styles.headerRow}>
             <FontAwesome name="tasks" size={32} color="black" style={{ maxWidth: '30%' }} />
-            <Text style={[styles.SmolText, { paddingLeft: 10 }]}>{params.name}</Text>
+            <Text style={[styles.SmolText, { paddingLeft: 10 }]}>{params.project_name}</Text>
             <View style={{ maxWidth: '70%', width: '70%' }}>
                 <View style={styles.container}>
                     <View style={styles.progressBackground}>
@@ -123,7 +119,7 @@ const TeamScreen = () => {
         </View>
         <View style={styles.headerRow}>
           <TouchableOpacity
-                    onPress={() => router.push({ pathname: '/inApp/createTaskScreen', params: {project_id: params.id, team_id: params.teamID }})}
+                    onPress={() => router.push({ pathname: '/inApp/createTaskScreen', params: {project_id: params.project_id, team_id: params.team_id }})}
                     style={styles.addButton}
                 >
                     <Ionicons name="add" size={24} color="white" />

@@ -55,7 +55,7 @@ export default function HomeScreen() {
                         <TouchableOpacity
                             key={team.id}
                             style={styles.teamButton}
-                            onPress={() => router.push({ pathname: './team', params: { id: team.id.toString(), name: team.name, creator_id: team.creator_id, user:user?.toString() } })}
+                            onPress={() => router.push({ pathname: './team', params: { team_id: team.id.toString(), team_name: team.name, team_creator_id: team.creator_id, user:user?.toString() } })}
                         >
                             <Text style={styles.teamButtonText}>{team.name}</Text>
                         </TouchableOpacity>

@@ -2,38 +2,28 @@ import React, { useEffect, useState } from "react";
 import { SafeAreaView, FlatList, StatusBar, StyleSheet, View, TextInput, Button, Text, Image } from "react-native";
 import ButtonMain from "../components/button";
 import { useRouter } from "expo-router";
-import {storeUserId} from "../components/getUser"; 
+import {getUserId, storeUserId} from "../components/getUser"; 
 import {ipAddr} from "../components/backendip"; 
 
 const App = () => {
   const router = useRouter();
 
   async function Login() {
-  var email = "name";
-  var password = "name"
-    try {
-        const response = await fetch(`http://${ipAddr}:5000/login`, {
-            method: 'POST',
-            headers: {
-          'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password }),
+    try{
+        await getUserId().then((userId) => {
+            console.log("User ID:", userId);
+            if (userId) {
+                router.replace("/inApp/homeScreen");
+            }
         });
-
-        if (response.ok) {
-            console.log("Login successful");
-            const data = await response.json();
-            storeUserId(data.userID, data.token);
-            router.replace("/inApp/homeScreen");
-        } else {
-            alert("Invalid email or password");
-        }
     } catch (error) {
-        alert("Could not log in");
+        console.error("Error fetching user ID:", error);
     }
 }
 
-
+useEffect(() => {
+  Login();
+}), [];
   return (
     <View style={styles.MainContainer}>
         <Text style={styles.MainText}>TaskMaster</Text>

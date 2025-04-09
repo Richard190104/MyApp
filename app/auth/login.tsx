@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import ButtonMain from '@/components/button';
-import {storeUserId} from "../../components/getUser"; 
+import {getUserId, storeUserId} from "../../components/getUser"; 
 import {ipAddr} from "@/components/backendip"; 
 
 export default function LoginScreen() {
@@ -11,6 +11,7 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
 
     async function Login() {
+       
         try {
             const response = await fetch(`http://${ipAddr}:5000/login`, {
                 method: 'POST',

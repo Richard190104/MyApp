@@ -20,7 +20,6 @@ type TeamMember = {
 
 export default function CreateProjectScreen() {
     const params = useLocalSearchParams();
-
     const [taskName, setTaskName] = useState('');
     const [deadline, setdeadline] = useState('');
     const [description, setDescription] = useState('');
@@ -36,10 +35,9 @@ export default function CreateProjectScreen() {
     
     useEffect(() => {
         (async () => {
-            console.log(params.team_id)
+
             if (typeof params.team_id === 'string') {
                 const members = await getTeamMembers(parseInt(params.team_id, 10));
-                console.log(members);
                 if (Array.isArray(members)) {
                     
     
@@ -92,7 +90,6 @@ export default function CreateProjectScreen() {
             });
 
             const data = await response.json();
-            console.log("RESPONSE:", response.status, data);
 
             if (response.ok) {
                 setShowToast(true);

@@ -8,7 +8,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 
- function CreateProjectScreen() {
+export default   function CreateProjectScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
     const [projectName, setprojectName] = useState('');
@@ -42,7 +42,7 @@ import { ipAddr } from '@/components/backendip';
                 body: JSON.stringify({
                     name: projectName,
                     deadline: deadline,
-                    team_id: params.id,
+                    team_id: params.team_id,
 
                 }),
             });
@@ -56,7 +56,7 @@ import { ipAddr } from '@/components/backendip';
                 setTimeout(() => {
                     setShowToast(false);
                     router.back();
-                    router.replace({ pathname: './team', params: { id: params.id.toString(), name: params.name, creator_id: params.creator_id, user:userID?.toString() } })
+                    router.replace({ pathname: './team', params: { team_id: params.team_id.toString(), team_name: params.team_name, team_creator_id: params.team_creator_id, user:userID?.toString() } })
                 }, 2000);
             } else {
                 Alert.alert('Error', data.message || 'Failed to create project.');

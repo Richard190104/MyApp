@@ -26,7 +26,7 @@ const TeamScreen = () => {
 
             if (user !== null) {
                 try {
-                    const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${params.id}`);
+                    const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${params.team_id}`);
                     const data = await response.json();
                     if (Array.isArray(data)) {
                         setProjects(data);
@@ -41,7 +41,7 @@ const TeamScreen = () => {
 
         const fetchTeamMembers = async () => {
             try {
-                const response = await fetch(`http://${ipAddr}:5000/getTeamMembers?teamID=${params.id}`);
+                const response = await fetch(`http://${ipAddr}:5000/getTeamMembers?teamID=${params.team_id}`);
                 const data = await response.json();
                 if (Array.isArray(data)) {
                     setTeamMembers(data);
@@ -49,8 +49,8 @@ const TeamScreen = () => {
                         .filter(member => member.role === 'admin' || member.role === 'owner')
                         .map(member => member.user_id);
                     setProjectAdmins(admins);
-                    if(typeof params.id === "string"){
-                        storeTeamMembers(data, parseInt(params.id)); 
+                    if(typeof params.team_id === "string"){
+                        storeTeamMembers(data, parseInt(params.team_id)); 
                     }
 
                 }
@@ -75,17 +75,17 @@ const TeamScreen = () => {
                 },
                 body: JSON.stringify({
                     user_id: user_id,
-                    team_id: params.id,
+                    team_id: params.team_id,
                 }), 
             });
 
             if (response.ok) {
                 alert("Team member removed successfully!");
                 setTeamMembers(prevMembers => prevMembers.filter(member => member.user_id !== user_id));
-                if (typeof params.id === "string") {
-                    storeTeamMembers(teamMembers, parseInt(params.id, 10));
+                if (typeof params.team_id === "string") {
+                    storeTeamMembers(teamMembers, parseInt(params.team_id, 10));
                 } else {
-                    console.warn("Invalid team ID:", params.id);
+                    console.warn("Invalid team ID:", params.team_id);
                 }
             } else {
                 alert("Failed to remove team member");
@@ -105,7 +105,7 @@ const TeamScreen = () => {
                 },
                 body: JSON.stringify({
                      email: email, 
-                     team: params.id,
+                     team: params.team_id,
 
                     }),
             });
@@ -124,11 +124,11 @@ const TeamScreen = () => {
   return (
 <SafeAreaView style={styles.MainContainer}>
             <TopBar />
-            <Text style={styles.mainText}>{params.name}</Text>
+            <Text style={styles.mainText}>{params.team_name}</Text>
             <View style={styles.headerRow}>
                 <Text style={styles.SmolText}>Team projects</Text>
                 <TouchableOpacity
-                    onPress={() => router.push({ pathname: '/inApp/createProjectScreen', params: { id: params.id.toString(), name: params.name, creator_id: params.creator_id, user:user?.toString() } })}
+                    onPress={() => router.push({ pathname: '/inApp/createProjectScreen', params: { team_id: params.team_id.toString(), team_name: params.team_name, team_creator_id: params.team_creator_id, user:user?.toString() } })}
                     style={styles.addButton}
                 >
                     <Ionicons name="add" size={24} color="white" />
@@ -140,7 +140,7 @@ const TeamScreen = () => {
                         <TouchableOpacity
                             key={project.id}
                             style={styles.teamButton}
-                            onPress={() => router.push({ pathname: '/inApp/projectscreen', params: { id: project.id.toString(), name: project.project_name, teamID: params.id, userID: user, deadline: project.deadline.toString(), team_name: params.name } })}
+                            onPress={() => router.push({ pathname: '/inApp/projectscreen', params: { project_id: project.id.toString(), project_name: project.project_name, team_id: params.team_id, user_id: user, project_deadline: project.deadline.toString(), team_name: params.team_name } })}
                         >
                             <Text style={styles.teamButtonText}>{project.project_name}</Text>
                         </TouchableOpacity>
@@ -154,7 +154,7 @@ const TeamScreen = () => {
             <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.SmolText}>Team Members</Text>
                 <View style={{ flexDirection: 'row', gap: 15 }}>
-                    <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/chatScreen', params: { teamID: params.id, userID: user } })}>
+                    <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/chatScreen', params: { team_id: params.team_id, user_id: user } })}>
                         <MaterialCommunityIcons name="message-text-outline" size={25} color="gray" />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setShowInput(!showInput)}>
