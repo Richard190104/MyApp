@@ -23,9 +23,10 @@ const TaskScreen = () => {
                     const members = await getTeamMembers(parseInt(params.team_id, 10));
                     if (Array.isArray(members)) {
 
-                        setAssignedMember(members.find(
-                            (member) => member.user_id === parseInt(Array.isArray(params.task_assigned_to) ? params.task_assigned_to[0] : params.task_assigned_to, 10)
-                        ).username)
+                        const assigned = members.find(
+                          (member) => member.user_id === parseInt(Array.isArray(params.task_assigned_to) ? params.task_assigned_to[0] : params.task_assigned_to, 10)
+                        );
+                        setAssignedMember(assigned ? assigned.username : ' --');
                        
                     } else {
                         console.error('Invalid team members data:', members);
