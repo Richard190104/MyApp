@@ -32,7 +32,7 @@ const TeamScreen = () => {
         const token = await AsyncStorage.getItem('authToken');
         const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`, {
           headers: {
-        'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${token}`,
           },
         });
         const data = await response.json();

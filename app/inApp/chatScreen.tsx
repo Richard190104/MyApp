@@ -15,6 +15,7 @@ import io from 'socket.io-client';
 import { Ionicons } from '@expo/vector-icons';
 import TopBar from '@/components/topBar';
 import {ipAddr} from "@/components/backendip"; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const socket = io(`http://${ipAddr}:5000`);
 
@@ -38,20 +39,25 @@ const ChatScreen = () => {
     setLoadingMore(true);
 
     try {
-      const res = await fetch(`http://${ipAddr}:5000/getMessages?teamID=${teamID}&offset=${offset}&limit=${limit}`);
+      const token = await AsyncStorage.getItem('authToken');
+      const res = await fetch(`http://${ipAddr}:5000/getMessages?teamID=${teamID}&offset=${offset}&limit=${limit}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      });
       const data = await res.json();
 
       if (Array.isArray(data) && data.length > 0) {
-        setMessages(prev => [...data, ...prev]);
-        setOffset(prev => prev + data.length);
+      setMessages(prev => [...data, ...prev]);
+      setOffset(prev => prev + data.length);
 
-        if (scrollToBottom) {
-          setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: false });
-          }, 100);
-        }
+      if (scrollToBottom) {
+        setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: false });
+        }, 100);
+      }
       } else {
-        setHasMore(false);
+      setHasMore(false);
       }
     } catch (err) {
       console.error("Error fetching messages:", err);

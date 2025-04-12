@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TopBar from '@/components/topBar';
@@ -16,9 +17,19 @@ export default function InviteScreen() {
         const fetchInvites = async () => {
             const userId = await getUserId();
             if (!userId) return;
+
+            const token = await AsyncStorage.getItem('authToken');
+            if (!token) {
+                console.warn("No auth token found");
+                return;
+            }
     
             try {
-                const response = await fetch(`http://${ipAddr}:5000/getInvitations?userId=${userId}`);
+                const response = await fetch(`http://${ipAddr}:5000/getInvitations?userId=${userId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
+                });
                 const data = await response.json();
                 console.log("Fetched invites:", data);
     
@@ -39,10 +50,17 @@ export default function InviteScreen() {
 
     const handleAccept = async (inviteId: number) => {
         try {
+            const token = await AsyncStorage.getItem('authToken');
+            if (!token) {
+                console.warn("No auth token found");
+                return;
+            }
+
             const response = await fetch(`http://${ipAddr}:5000/acceptInvite`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({ invite_id: inviteId }),
             });
@@ -62,10 +80,17 @@ export default function InviteScreen() {
     
     const handleDecline = async (inviteId: number) => {
         try {
+            const token = await AsyncStorage.getItem('authToken');
+            if (!token) {
+                console.warn("No auth token found");
+                return;
+            }
+
             const response = await fetch(`http://${ipAddr}:5000/declineInvite`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({ invite_id: inviteId }),
             });

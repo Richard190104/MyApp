@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import BottomBar from '@/components/bottomBar';
@@ -34,17 +35,24 @@ export default function CreateTeamScreen() {
         }
     
         try {
-            const response = await fetch(`http://${ipAddr}:5000/createTeam`, { // <- zmeň IP
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: teamName,
-                    description: teamDescription,
-                    user_id: userID,
-                    members: members,
-                }),
+            const token = await AsyncStorage.getItem('authToken'); 
+            if (!token) {
+            Alert.alert('Error', 'Authentication token not found.');
+            return;
+            }
+
+            const response = await fetch(`http://${ipAddr}:5000/createTeam`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`, 
+            },
+            body: JSON.stringify({
+                name: teamName,
+                description: teamDescription,
+                user_id: userID,
+                members: members,
+            }),
             });
     
             const data = await response.json();
