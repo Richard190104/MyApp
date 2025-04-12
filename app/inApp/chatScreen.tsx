@@ -69,7 +69,7 @@ const ChatScreen = () => {
 
   useEffect(() => {
     socket.emit('join', { team_id: teamID });
-    fetchMessages(true); // first load
+    fetchMessages(true); 
 
     socket.on('receive_message', (msg: { sender_id: number; sender_name?: string; content: string }) => {
       setMessages(prev => [...prev, msg]);

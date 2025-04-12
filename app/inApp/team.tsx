@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, TextInput } from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, TextInput, ScrollView, Modal } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomBar from "@/components/bottomBar";
@@ -16,6 +16,7 @@ const TeamScreen = () => {
     const [projectAdmins, setProjectAdmins] = useState<number[]>([])
     const [showInput, setShowInput] = useState(false)
     const [newMemberEmail,setNewMemberEmail] = useState("");
+    const [showRoleOptions, setShowRoleOptions] = useState<{ [key: number]: boolean }>({});
     useEffect(() => {
         const fetchUserAndTeams = async () => {
             const token = await AsyncStorage.getItem('authToken');
@@ -144,36 +145,74 @@ const TeamScreen = () => {
         }
     }
 
+    async function modifyUserRole(user_id: number, option: string) {
+        try {
+            const token = await AsyncStorage.getItem('authToken');
+            const response = await fetch(`http://${ipAddr}:5000/modifyUserRole`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    user_id: user_id,
+                    team_id: params.team_id,
+                    new_role: option,
+                }),
+            });
+
+            if (response.ok) {
+                alert("User role updated successfully!");
+                setTeamMembers(prevMembers =>
+                    prevMembers.map(member =>
+                        member.user_id === user_id ? { ...member, role: option } : member
+                    )
+                );
+            } else if (response.status === 403) {
+                alert("You don't have permission to modify roles.");
+            } else if (response.status === 401) {
+                alert("We couldn't authenticate you.");
+            } else {
+                alert("Failed to update user role.");
+            }
+        } catch (error) {
+            console.error("Error updating user role:", error);
+            alert("Error updating user role.");
+        }
+    }
+
   return (
 <SafeAreaView style={styles.MainContainer}>
-            <TopBar />
-            <Text style={styles.mainText}>{params.team_name}</Text>
-            <View style={styles.headerRow}>
-                <Text style={styles.SmolText}>Team projects</Text>
-                <TouchableOpacity
-                    onPress={() => router.push({ pathname: '/inApp/createProjectScreen', params: { team_id: params.team_id.toString(), team_name: params.team_name, team_creator_id: params.team_creator_id, user:user?.toString() } })}
-                    style={styles.addButton}
-                >
-                    <Ionicons name="add" size={24} color="white" />
-                </TouchableOpacity>
-            </View>
-            <View style={styles.teamList}>
-                {projects.length > 0 ? (
-                    projects.map(project => (
-                        <TouchableOpacity
-                            key={project.id}
-                            style={styles.teamButton}
-                            onPress={() => router.push({ pathname: '/inApp/projectscreen', params: { project_id: project.id.toString(), project_name: project.project_name, team_id: params.team_id, user_id: user, project_deadline: project.deadline.toString(), team_name: params.team_name } })}
-                        >
-                            <Text style={styles.teamButtonText}>{project.project_name}</Text>
-                        </TouchableOpacity>
-                    ))
-                ) : (
-                    <Text style={styles.noTeamsText}>This team does not have any projects</Text>
-                )}
-            </View>
-            
-            <View style={styles.teamList}>
+    <TopBar />
+    <Text style={styles.mainText}>{params.team_name}</Text>
+    <ScrollView style={{ width: '100%' }} contentContainerStyle={{ alignItems: 'center' }}>
+    <View style={styles.headerRow}>
+        <Text style={styles.SmolText}>Team projects</Text>
+        <TouchableOpacity
+            onPress={() => router.push({ pathname: '/inApp/createProjectScreen', params: { team_id: params.team_id.toString(), team_name: params.team_name, team_creator_id: params.team_creator_id, user: user?.toString() } })}
+            style={styles.addButton}
+        >
+            <Ionicons name="add" size={24} color="white" />
+        </TouchableOpacity>
+    </View>
+    
+        <View style={styles.teamList}>
+            {projects.length > 0 ? (
+                projects.map(project => (
+                    <TouchableOpacity
+                        key={project.id}
+                        style={styles.teamButton}
+                        onPress={() => router.push({ pathname: '/inApp/projectscreen', params: { project_id: project.id.toString(), project_name: project.project_name, team_id: params.team_id, user_id: user, project_deadline: project.deadline.toString(), team_name: params.team_name } })}
+                    >
+                        <Text style={styles.teamButtonText}>{project.project_name}</Text>
+                    </TouchableOpacity>
+                ))
+            ) : (
+                <Text style={styles.noTeamsText}>This team does not have any projects</Text>
+            )}
+        </View>
+
+        <View style={styles.teamList}>
             <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={styles.SmolText}>Team Members</Text>
                 <View style={{ flexDirection: 'row', gap: 15 }}>
@@ -202,7 +241,6 @@ const TeamScreen = () => {
                             }}
                             placeholder="Enter email"
                             onChangeText={setNewMemberEmail}
-                           
                         />
                         <TouchableOpacity
                             style={{
@@ -223,41 +261,76 @@ const TeamScreen = () => {
                 </View>
             )}
             {teamMembers.length > 0 ? (
-            teamMembers.map((member, index) => (
-                <View key={`${member.user_id}-${index}`} style={styles.memberBlock}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={{ marginRight: 10 }}>
-                            <Ionicons name="person-circle-outline" size={24} color="black" />
+                teamMembers.map((member, index) => (
+                    <View key={`${member.user_id}-${index}`} style={styles.memberBlock}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <View style={{ marginRight: 10 }}>
+                                <Ionicons name="person-circle-outline" size={24} color="black" />
+                            </View>
+                            <View>
+                                <Text style={styles.member}>{member.username}</Text>
+                                <Text
+                                    style={[
+                                        styles.memberRole,
+                                        member.role === 'owner' ? { fontWeight: 'bold', color: 'black' } : {}
+                                    ]}>{member.role}</Text>
+                            </View>
                         </View>
-                        <View>
-                            <Text style={styles.member}>{member.username}</Text>
-                            <Text
-                                style={[
-                                    styles.memberRole,
-                                    member.role === 'owner' ? { fontWeight: 'bold', color: 'black' } : {}
-                                ]}>{member.role}</Text>
-                        </View>
+                        {member.role !== 'owner' && user !== undefined && user !== null && projectAdmins.includes(user) && (
+                            <View style={{ flexDirection: 'row', gap: 15 }}>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        setShowRoleOptions(prevState => ({
+                                            ...prevState,
+                                            [member.user_id]: !prevState[member.user_id],
+                                        }));
+                                    }}
+                                >
+                                    <MaterialCommunityIcons name="pencil" size={25} color="black" />
+                                </TouchableOpacity>
+                                {showRoleOptions[member.user_id] && (
+                                      <Modal
+                                      transparent
+                                      visible={showRoleOptions[member.user_id]}
+                                      animationType="slide"
+                                    onRequestClose={() => setShowRoleOptions(prevState => ({ ...prevState, [member.user_id]: false }))}
+                                    >
+                                      <View style={styles.modalOverlay}>
+                                        <View style={styles.modalContainer}>
+                                          <Text style={styles.modalTitle}>Zmeniť rolu pre {member.username}</Text>
+                                          {['member', 'admin'].map(option => (
+                                            <TouchableOpacity
+                                              key={option}
+                                              onPress={async () => {
+                                                await modifyUserRole(member.user_id, option);
+                                                setShowRoleOptions(prevState => ({ ...prevState, [member.user_id]: false }));
+                                              }}
+                                              style={styles.optionButton}
+                                            >
+                                              <Text style={styles.optionText}>{option}</Text>
+                                            </TouchableOpacity>
+                                          ))}
+                                        <TouchableOpacity onPress={() => setShowRoleOptions({})}>
+                                            <Text style={styles.cancelText}>Zrušiť</Text>
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
+                                    </Modal>
+                                )}
+                                <TouchableOpacity onPress={() => removeTeamMember(member.user_id)}>
+                                    <MaterialCommunityIcons name="close" size={25} color="red" />
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
-                    {member.role !== 'owner' && user !== undefined && user !== null && projectAdmins.includes(user) && (
-                        <View style={{ flexDirection: 'row', gap: 15 }}>
-                            <TouchableOpacity>
-                                <MaterialCommunityIcons name="pencil" size={25} color="black" />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => removeTeamMember(member.user_id)}>
-                                <MaterialCommunityIcons name="close" size={25} color="red" />
-                            </TouchableOpacity>
-                        </View>
-                       
-                       
-                    )}
-                </View>
-            ))
-        ) : (
-            <Text style={styles.noTeamsText}>This team does not have any members</Text>
-        )}
-            </View>
-            <BottomBar />
-        </SafeAreaView>
+                ))
+            ) : (
+                <Text style={styles.noTeamsText}>This team does not have any members</Text>
+            )}
+        </View>
+    </ScrollView>
+    <BottomBar />
+</SafeAreaView>
   );
 };
 
@@ -349,7 +422,40 @@ const styles = StyleSheet.create({
     memberRole: {
         color: 'gray',
 
-    }
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      modalContainer: {
+        backgroundColor: 'white',
+        borderRadius: 10,
+        padding: 20,
+        width: '80%',
+        elevation: 10,
+        alignItems: 'center',
+      },
+      modalTitle: {
+        fontSize: 18,
+        marginBottom: 10,
+        fontWeight: 'bold',
+      },
+      optionButton: {
+        paddingVertical: 10,
+        width: '100%',
+        alignItems: 'center',
+      },
+      optionText: {
+        fontSize: 16,
+        color: 'black',
+      },
+      cancelText: {
+        marginTop: 20,
+        color: 'red',
+        fontSize: 16,
+      },
 });
 
 export default TeamScreen;
