@@ -21,8 +21,8 @@ const socket = io(`http://${ipAddr}:5000`);
 
 const ChatScreen = () => {
   const params = useLocalSearchParams();
-  const teamID = params.teamID;
-  const userID = parseInt(params.userID as string);
+  const teamID = params.team_id;
+  const userID = parseInt(params.user_id as string);
 
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
