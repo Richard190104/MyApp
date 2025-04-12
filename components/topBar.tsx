@@ -52,7 +52,7 @@ export default function TopBar() {
                     <TouchableOpacity style={styles.menuItem}>
                         <Text style={styles.ItemText}>Dark Mode</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => { router.push('/settingsScreens/profileScreen') }}>
                         <Text style={styles.ItemText}>Manage Profile</Text>
                     </TouchableOpacity>
                     </View>
@@ -65,7 +65,7 @@ export default function TopBar() {
 const styles = StyleSheet.create({
     safeArea: {
         width: '100%',
-        zIndex: 10000, 
+        zIndex: 999, 
     },
     mainText: {
         fontSize: 28,
@@ -81,6 +81,7 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: 'white', 
         zIndex: 10000, 
+        marginBottom: 10,
     },
     iconLeft: {
         flex: 1,
@@ -105,8 +106,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         zIndex: 999, 
         padding: 10,
-        borderWidth: 1,
-        borderColor: 'gray',
         display: 'flex',
         alignItems: 'center',
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { SafeAreaView, FlatList, StatusBar, StyleSheet, View, TextInput, Button, Text, Image } from "react-native";
 import ButtonMain from "../components/button";
 import { useRouter } from "expo-router";
-import {getUserId, storeUserId} from "../components/getUser"; 
+import {getUserId, storeUser, storeUserId} from "../components/getUser"; 
 import {ipAddr} from "../components/backendip"; 
 
 const App = () => {
@@ -21,8 +21,14 @@ async function Login(email: string, password: string) {
     
             if (response.ok) {
                 const data = await response.json();
-                
+                const userInfo = {
+                  id: data.userID,
+                  username: data.username,
+                  email: data.email,
+                  profile_picture: data.profile_picture,
+                };
                 await storeUserId(data.userID, data.token);
+                await storeUser(userInfo);
     
                 router.replace("/inApp/homeScreen");
             } else {

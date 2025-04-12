@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import TopBar from '@/components/topBar';
 import {ipAddr} from "@/components/backendip"; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import BottomBar from '@/components/bottomBar';
 
 const socket = io(`http://${ipAddr}:5000`);
 
@@ -147,8 +149,10 @@ const ChatScreen = () => {
           <Ionicons name="send" size={24} color="#70ABAF" />
         </TouchableOpacity>
       </View>
+      <BottomBar/>
+
     </KeyboardAvoidingView>
-  );
+   );
 };
 
 const styles = StyleSheet.create({
@@ -198,6 +202,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingTop: 10,
     gap: 10,
+    marginBottom: 100,
   },
   input: {
     flex: 1,

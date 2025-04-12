@@ -166,7 +166,7 @@ const TeamScreen = () => {
 <SafeAreaView style={styles.MainContainer}>
     <TopBar />
     <Text style={styles.mainText}>{params.team_name}</Text>
-    <View style={styles.MainContainer}>
+    <View style={[styles.MainContainer, { marginBottom: 60 }]}>
         <View style={styles.headerRow}>
             <FontAwesome name="tasks" size={32} color="black" style={{ maxWidth: '30%' }} />
             <Text style={[styles.SmolText, { paddingLeft: 10 }]}>{params.project_name}</Text>
@@ -219,6 +219,7 @@ const styles = StyleSheet.create({
         width: "100%",
         alignItems: "center",
         backgroundColor: "#f9f9f9",
+       
     },
     SmolText: {
         fontSize: 18,
@@ -233,6 +234,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        marginBottom: 10,
     },
     addButton: {
         backgroundColor: "#70ABAF",

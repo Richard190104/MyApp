@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, TextInput, ScrollView, Modal } from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, TextInput, ScrollView, Modal, Image } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomBar from "@/components/bottomBar";
@@ -12,7 +12,7 @@ const TeamScreen = () => {
     const params = useLocalSearchParams();
     const [projects, setProjects] = useState<{ id: number; team_id: number; project_name: string; deadline: Date }[]>([]);
     const [user, setUser] = useState<number|null>();
-    const [teamMembers,setTeamMembers] = useState<{user_id:number; username:string; email:string; role:string}[]>([]);
+    const [teamMembers,setTeamMembers] = useState<{user_id:number; username:string; email:string; role:string; profile_picture?: string}[]>([]);
     const [projectAdmins, setProjectAdmins] = useState<number[]>([])
     const [showInput, setShowInput] = useState(false)
     const [newMemberEmail,setNewMemberEmail] = useState("");
@@ -185,7 +185,6 @@ const TeamScreen = () => {
 <SafeAreaView style={styles.MainContainer}>
     <TopBar />
     <Text style={styles.mainText}>{params.team_name}</Text>
-    <ScrollView style={{ width: '100%' }} contentContainerStyle={{ alignItems: 'center' }}>
     <View style={styles.headerRow}>
         <Text style={styles.SmolText}>Team projects</Text>
         <TouchableOpacity
@@ -195,6 +194,9 @@ const TeamScreen = () => {
             <Ionicons name="add" size={24} color="white" />
         </TouchableOpacity>
     </View>
+    
+    <ScrollView style={{ width: '100%' }} contentContainerStyle={{ alignItems: 'center', paddingBottom: 50 }}>
+  
     
         <View style={styles.teamList}>
             {projects.length > 0 ? (
@@ -265,7 +267,14 @@ const TeamScreen = () => {
                     <View key={`${member.user_id}-${index}`} style={styles.memberBlock}>
                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <View style={{ marginRight: 10 }}>
-                                <Ionicons name="person-circle-outline" size={24} color="black" />
+                                {member.profile_picture ? (
+                                    <Image
+                                        source={{  uri: `data:image/jpeg;base64,${member.profile_picture}`  }}
+                                        style={{ width: 40, height: 40, borderRadius: 20 }}
+                                    />
+                                ) : (
+                                    <Ionicons name="person-circle-outline" size={40} color="black" />
+                                )}
                             </View>
                             <View>
                                 <Text style={styles.member}>{member.username}</Text>
@@ -330,6 +339,7 @@ const TeamScreen = () => {
         </View>
     </ScrollView>
     <BottomBar />
+
 </SafeAreaView>
   );
 };

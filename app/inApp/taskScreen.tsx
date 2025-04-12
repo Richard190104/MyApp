@@ -17,11 +17,11 @@ const TaskScreen = () => {
     const [assignedMember, setAssignedMember] = useState<string | null>(null);
     const [tasks, setTasks] = useState<{id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean, parent_task_id: number}[]>([]);
     
-    const text = "Ahoj! Vitaj v aplikácii s podporou čítania textu nahlas.";
+    const text = "Hello, this is native speech synthesis. You are on the task screen. The task name is " + params.task_name + " and it is assigned to " + assignedMember + ".";
 
     const speak = () => {
       Speech.speak(text, {
-        language: 'sk-SK', 
+        language: 'en-US', 
         pitch: 1.0,
         rate: 1.0,
       });

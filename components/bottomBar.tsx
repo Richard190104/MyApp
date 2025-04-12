@@ -12,7 +12,7 @@ function goChat(){
 }
 
 function goCalendar(){
-
+    router.push('/inApp/calendar');
 }
 
 
@@ -23,13 +23,13 @@ const BottomBar = () => {
     return (
         <SafeAreaView style={[styles.safeArea, { paddingBottom: insets.bottom }]}>
             <View style={styles.container}>
-                <TouchableOpacity onPress={() => router.push('/inApp/homeScreen')}>
+                <TouchableOpacity onPress={goMainPage}>
                     <Image source={require('../assets/images/main.png')} style={styles.icon}/>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={goChat}>
                     <Image source={require('../assets/images/chat.png')} style={styles.icon}/>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => {}}>
+                <TouchableOpacity onPress={goCalendar}>
                     <Image source={require('../assets/images/calendar.png')} style={styles.icon}/>
                 </TouchableOpacity>
             </View>
@@ -45,7 +45,8 @@ const styles = StyleSheet.create({
         right: 0,
         height: 80,
         borderRadius: 25,
-
+        zIndex: 1000,
+        backgroundColor: "#fff",
     },
     container: {
         borderColor: "#32292F",

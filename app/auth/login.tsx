@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TextInput, Button } from 'react-native';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import ButtonMain from '@/components/button';
-import {getUserId, storeUserId} from "../../components/getUser"; 
+import {getUserId, storeUser, storeUserId} from "../../components/getUser"; 
 import {ipAddr} from "@/components/backendip"; 
 
 export default function LoginScreen() {
@@ -21,13 +21,19 @@ export default function LoginScreen() {
                 body: JSON.stringify({ email, password }),
             });
     
-            if (response.ok) {
+           if (response.ok) {
                 const data = await response.json();
-                
+                const userInfo = {
+                    id: data.userID,
+                    username: data.username,
+                    email: data.email,
+                    profile_picture: data.profile_picture,
+                };
                 await storeUserId(data.userID, data.token);
-    
+                await storeUser(userInfo);
+
                 router.replace("/inApp/homeScreen");
-            } else {
+            }  else {
                 alert("Invalid email or password");
             }
         } catch (error) {

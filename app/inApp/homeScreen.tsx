@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -48,30 +48,30 @@ export default function HomeScreen() {
             <TopBar />
 
             <View style={styles.headerRow}>
-                <Text style={styles.SmolText}>Teams</Text>
-                <TouchableOpacity
-                    onPress={() => router.push('/inApp/createTeamScreen')}
-                    style={styles.addButton}
-                >
-                    <Ionicons name="add" size={24} color="white" />
-                </TouchableOpacity>
+            <Text style={styles.SmolText}>Teams</Text>
+            <TouchableOpacity
+                onPress={() => router.push('/inApp/createTeamScreen')}
+                style={styles.addButton}
+            >
+                <Ionicons name="add" size={24} color="white" />
+            </TouchableOpacity>
             </View>
 
-            <View style={styles.teamList}>
-                {teams.length > 0 ? (
-                    teams.map(team => (
-                        <TouchableOpacity
-                            key={team.id}
-                            style={styles.teamButton}
-                            onPress={() => router.push({ pathname: './team', params: { team_id: team.id.toString(), team_name: team.name, team_creator_id: team.creator_id, user:user?.toString() } })}
-                        >
-                            <Text style={styles.teamButtonText}>{team.name}</Text>
-                        </TouchableOpacity>
-                    ))
-                ) : (
-                    <Text style={styles.noTeamsText}>You are not a member of any team yet.</Text>
-                )}
-            </View>
+            <ScrollView contentContainerStyle={[styles.teamList, { paddingBottom: 80 }]}>
+            {teams.length > 0 ? (
+                teams.map(team => (
+                <TouchableOpacity
+                    key={team.id}
+                    style={styles.teamButton}
+                    onPress={() => router.push({ pathname: './team', params: { team_id: team.id.toString(), team_name: team.name, team_creator_id: team.creator_id, user:user?.toString() } })}
+                >
+                    <Text style={styles.teamButtonText}>{team.name}</Text>
+                </TouchableOpacity>
+                ))
+            ) : (
+                <Text style={styles.noTeamsText}>You are not a member of any team yet.</Text>
+            )}
+            </ScrollView>
 
             <BottomBar />
         </SafeAreaView>
@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
         padding: 10,
         flex: 1,
         width: "100%",
-        alignItems: "center",
         backgroundColor: "#f9f9f9",
     },
     SmolText: {
@@ -95,10 +94,12 @@ const styles = StyleSheet.create({
         textAlign: "left",
     },
     headerRow: {
-        width: "90%",
+        width: "100%",
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "center",
+        paddingHorizontal: 30,
+        paddingBottom: 10,
     },
     addButton: {
         backgroundColor: "#70ABAF",
@@ -144,8 +145,9 @@ const styles = StyleSheet.create({
         marginTop: 20,
     },
     teamList: {
-        width: "90%",
+        width: "100%",
+        paddingHorizontal: 30,
         marginTop: 10,
-        marginBottom: 20,
+
     },
 });
