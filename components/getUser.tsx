@@ -25,7 +25,6 @@ export const getUserId = async () => {
 export const storeTeamMembers = async (teamMembers: any[], team_id: number) => {
   try {
     const jsonValue = JSON.stringify(teamMembers);
-    console.log(jsonValue)
     await AsyncStorage.setItem(`teamMembers_${team_id}`, jsonValue);
   } catch (e) {
     console.error('Error saving team members', e);
@@ -35,7 +34,6 @@ export const storeTeamMembers = async (teamMembers: any[], team_id: number) => {
 export const getTeamMembers = async (team_id: number) => {
   try {
     const jsonValue = await AsyncStorage.getItem(`teamMembers_${team_id}`);
-    console.log(jsonValue)
     return jsonValue != null ? JSON.parse(jsonValue) : null;
   } catch (e) {
     console.error('Error reading team members', e);

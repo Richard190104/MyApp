@@ -8,29 +8,39 @@ import {ipAddr} from "../components/backendip";
 const App = () => {
   const router = useRouter();
 
-  async function Login() {
-    try{
-        await getUserId().then((userId) => {
-            console.log("User ID:", userId);
-            if (userId) {
+async function Login(email: string, password: string) {
+       
+        try {
+            const response = await fetch(`http://${ipAddr}:5000/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+    
+            if (response.ok) {
+                const data = await response.json();
+                
+                await storeUserId(data.userID, data.token);
+    
                 router.replace("/inApp/homeScreen");
+            } else {
+                alert("Invalid email or password");
             }
-        });
-    } catch (error) {
-        console.error("Error fetching user ID:", error);
+        } catch (error) {
+            alert("Could not log in");
+        }
     }
-}
 
-useEffect(() => {
-  Login();
-}), [];
+
   return (
     <View style={styles.MainContainer}>
         <Text style={styles.MainText}>TaskMaster</Text>
         <Image source={require('../assets/images/calendar.png')} style={styles.mainLogo} />
         <ButtonMain title="Log In" onPress={() => router.push('/auth/login')} styling={1}></ButtonMain>
         <ButtonMain title="Register" onPress={() => router.push('/auth/register')}></ButtonMain>
-        <ButtonMain title="Skip(odstranit toto potom)" onPress={Login}></ButtonMain>
+        <ButtonMain title="Skip(odstranit toto potom)" onPress={() => Login("name", "name")}></ButtonMain>
     </View>
   );
 };

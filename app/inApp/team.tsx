@@ -18,44 +18,58 @@ const TeamScreen = () => {
     const [newMemberEmail,setNewMemberEmail] = useState("");
     useEffect(() => {
         const fetchUserAndTeams = async () => {
+            const token = await AsyncStorage.getItem('authToken');
+
             if (typeof params.user === "string") {
-                setUser(parseInt(params.user, 10));
+            setUser(parseInt(params.user, 10));
             } else {
-                console.warn("Invalid user parameter:", params.user);
+            console.warn("Invalid user parameter:", params.user);
             }
 
             if (user !== null) {
-                try {
-                    const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${params.team_id}`);
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        setProjects(data);
-                    }
-                } catch (error) {
-                    console.error("Error fetching team names:", error);
+            try {
+                const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${params.team_id}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                });
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                setProjects(data);
                 }
+            } catch (error) {
+                console.error("Error fetching team names:", error);
+            }
             } else {
-                console.warn("User ID was null");
+            console.warn("User ID was null");
             }
         };
 
         const fetchTeamMembers = async () => {
             try {
-                const response = await fetch(`http://${ipAddr}:5000/getTeamMembers?teamID=${params.team_id}`);
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                    setTeamMembers(data);
-                    const admins = data
-                        .filter(member => member.role === 'admin' || member.role === 'owner')
-                        .map(member => member.user_id);
-                    setProjectAdmins(admins);
-                    if(typeof params.team_id === "string"){
-                        storeTeamMembers(data, parseInt(params.team_id)); 
-                    }
-
+            const token = await AsyncStorage.getItem('authToken');
+            const response = await fetch(`http://${ipAddr}:5000/getTeamMembers?teamID=${params.team_id}`, {
+                method: 'GET',
+                headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                },
+            });
+            const data = await response.json();
+            if (Array.isArray(data)) {
+                setTeamMembers(data);
+                const admins = data
+                .filter(member => member.role === 'admin' || member.role === 'owner')
+                .map(member => member.user_id);
+                setProjectAdmins(admins);
+                if (typeof params.team_id === "string") {
+                storeTeamMembers(data, parseInt(params.team_id));
                 }
+            }
             } catch (error) {
-                console.error("Error fetching team members:", error);
+            console.error("Error fetching team members:", error);
             }
         };
 
@@ -68,27 +82,31 @@ const TeamScreen = () => {
         try {
             const token = await AsyncStorage.getItem('authToken');
             const response = await fetch(`http://${ipAddr}:5000/removeTeamMember`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    user_id: user_id,
-                    team_id: params.team_id,
-                }), 
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                user_id: user_id,
+                team_id: params.team_id,
+            }), 
             });
 
             if (response.ok) {
-                alert("Team member removed successfully!");
-                setTeamMembers(prevMembers => prevMembers.filter(member => member.user_id !== user_id));
-                if (typeof params.team_id === "string") {
-                    storeTeamMembers(teamMembers, parseInt(params.team_id, 10));
-                } else {
-                    console.warn("Invalid team ID:", params.team_id);
-                }
+            alert("Team member removed successfully!");
+            setTeamMembers(prevMembers => prevMembers.filter(member => member.user_id !== user_id));
+            if (typeof params.team_id === "string") {
+                storeTeamMembers(teamMembers, parseInt(params.team_id, 10));
             } else {
-                alert("Failed to remove team member");
+                console.warn("Invalid team ID:", params.team_id);
+            }
+            } else if (response.status === 403) {
+            alert("You don't have permission for that.");
+            } else if (response.status === 401) {
+            alert("We couldn't authenticate you.");
+            } else {
+            alert("Failed to remove team member");
             }
         } catch (error) {
             console.error("Error removing team member:", error);
@@ -97,22 +115,27 @@ const TeamScreen = () => {
     }
 
     async function SendInvite(email: string) {
+        const token = await AsyncStorage.getItem('authToken');
         try {
             const response = await fetch(`http://${ipAddr}:5000/setInvite`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                      email: email, 
-                     team: params.team_id,
-
-                    }),
+                     team_id: params.team_id,
+                }),
             });
 
             if (response.ok) {
                 const data = await response.json();
                 alert("Invite sent successfully!");
+            } else if (response.status === 403) {
+                alert("You don't have permission for that.");
+            } else if (response.status === 401) {
+                alert("We couldn't authenticate you.");
             } else {
                 alert("Failed to send invite");
             }

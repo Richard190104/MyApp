@@ -98,6 +98,10 @@ export default function CreateProjectScreen() {
                     setShowToast(false);
                     router.back();
                 }, 2000);
+            } else if (response.status === 403) {
+                Alert.alert('Error', 'You don’t have permission for that.');
+            } else if (response.status === 401) {
+                Alert.alert('Error', 'We couldn’t authenticate you.');
             } else {
                 Alert.alert('Error', data.message || 'Failed to create task.');
             }

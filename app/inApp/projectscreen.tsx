@@ -1,5 +1,6 @@
 import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, TextInput, FlatList } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomBar from "@/components/bottomBar";
 import TopBar from "@/components/topBar";
 import { useEffect, useState } from "react";
@@ -26,20 +27,31 @@ const TeamScreen = () => {
 
     useFocusEffect(
       React.useCallback(() => {
-        const fetchProjectTasks = async () => {
-          try {
-            const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`);
-            const data = await response.json();
-            if (Array.isArray(data)) {
-              setTasks(data);
-              setProgress(calculate_percentage(data));
-            }
-          } catch (error) {
-            console.error("Error fetching project tasks:", error);
-          }
-        };
+      const fetchProjectTasks = async () => {
+        try {
+        const token = await AsyncStorage.getItem('authToken');
+        const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`, {
+          headers: {
+        'Authorization': `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          const sortedTasks = data.sort((a, b) => {
+          if (!a.deadline && !b.deadline) return 0;
+          if (!a.deadline) return 1;
+          if (!b.deadline) return -1;
+          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+          });
+          setTasks(sortedTasks);
+          setProgress(calculate_percentage(sortedTasks));
+        }
+        } catch (error) {
+        console.error("Error fetching project tasks:", error);
+        }
+      };
     
-        fetchProjectTasks();
+      fetchProjectTasks();
       }, [params.project_id])
     );
     
@@ -62,66 +74,93 @@ const TeamScreen = () => {
     const TaskItem = ({ task }: { task: { id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean; parent_task_id: number } }) => {
       const [checked, setChecked] = useState(task.completed);
 
-      function modifyTaskStatus(task: { id: number; completed: boolean }) {
-        fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            task_id: task.id,
-            completed: task.completed,
-          }),
-        })
-        .then(response => response.json())
-        .then(data => {
-          console.log('Task status modified:', data);
-        })
-        .catch(error => {
-          console.error('Error modifying task status:', error);
+      async function modifyTaskStatus(task: { id: number; completed: boolean }) {
+      const token = await AsyncStorage.getItem('authToken');
+      try {
+        const updateTaskAndSubtasks = async (taskId: number, completed: boolean) => {
+          const response = await fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          task_id: taskId,
+          completed: completed,
+        }),
+          });
+
+        if (response.status === 403) {
+          alert('You don\'t have permission for that.');
+          return false;
+        }
+
+        if (response.status === 401) {
+          alert('We couldn\'t authenticate you.');
+          return false;
+        }
+
+        if (!response.ok) {
+          alert('Failed to modify task status on the server.');
+          return false;
+        }
+
+          if (completed) {
+        tasks.forEach((t) => {
+          if (t.parent_task_id === taskId) {
+        t.completed = completed;
+        updateTaskAndSubtasks(t.id, completed);
+          }
         });
+          }
+          return true;
+        };
+
+        const success = await updateTaskAndSubtasks(task.id, !task.completed);
+        if (success) {
+          toggleCheckbox();
+        }
+      } catch (error) {
+        console.error('Error modifying task status:', error);
+      }
       }
 
-
       const toggleCheckbox = () => {
-        setChecked(!checked);
-        task.completed = !checked;
+      setChecked(!checked);
+      task.completed = !checked;
 
-        const rootTaskId = (task.parent_task_id === null) ? task.id : tasks.find(t => t.id === task.parent_task_id)?.id;
-        if (rootTaskId !== undefined) {
-          tasks.forEach((t) => {
-            let currentParentId: number | null = t.parent_task_id;
-            while (currentParentId !== null) {
-              if (currentParentId === rootTaskId) {
-          t.completed = task.completed;
-          break;
-              }
-              currentParentId = tasks.find(x => x.id === currentParentId)?.parent_task_id || null;
-            }
-            if (t.id === rootTaskId) {
-              t.completed = task.completed;
-            }
-          });
+      const updateSubtasks = (parentTaskId: number, completed: boolean) => {
+        tasks.forEach((t) => {
+        if (t.parent_task_id === parentTaskId) {
+          t.completed = completed;
+          updateSubtasks(t.id, completed); 
         }
-        modifyTaskStatus(task);
-        setProgress(calculate_percentage(tasks));
+        });
       };
-      
+
+      task.completed = !checked;
+      if(task.completed) {
+        updateSubtasks(task.id, task.completed); 
+      }
+      setProgress(calculate_percentage(tasks));
+      };
+
       return (
-        <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/taskScreen', params: {team_name: params.team_name,project_id: params.project_id, team_id: params.team_id, task_id: task.id, task_name: task.name, task_description: task.description, task_assigned_to: task.assigned_to, task_deadline: task.deadline ? task.deadline.toString() : '', task_completed: task.completed ? task.completed.toString() : '' }})}
-        style={styles.taskContainer}
-        >
+      <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/taskScreen', params: {team_name: params.team_name,project_id: params.project_id, team_id: params.team_id, task_id: task.id, task_name: task.name, task_description: task.description, task_assigned_to: task.assigned_to, task_deadline: task.deadline ? task.deadline.toString() : '', task_completed: task.completed ? task.completed.toString() : '', user_id: params.user_id }})}
+      style={styles.taskContainer}
+      >
         <TouchableOpacity
-          style={[styles.checkbox, checked && { backgroundColor: 'gray' }]}
-          onPress={toggleCheckbox}
+        style={[styles.checkbox, checked && { backgroundColor: 'gray' }]}
+        onPress={() => modifyTaskStatus(task)}
         >
-          {checked && <Ionicons name="checkmark" size={16} color="white" />}
+        {checked && <Ionicons name="checkmark" size={16} color="white" />}
         </TouchableOpacity>
-          <Text style={styles.taskText}>{task.name}</Text>
+        <Text style={styles.taskText}>{task.name}</Text>
         {task.assigned_to === Number(params.user_id) && (<Ionicons name="person-outline" size={24} color="black" />)}
-        </TouchableOpacity>
+      </TouchableOpacity>
       );
-      };
+    };
+     
 
   return (
 <SafeAreaView style={styles.MainContainer}>

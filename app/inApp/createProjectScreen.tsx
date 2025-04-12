@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomBar from '@/components/bottomBar';
 import TopBar from '@/components/topBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -34,10 +35,14 @@ export default   function CreateProjectScreen() {
         }
     
         try {
+            const token = await AsyncStorage.getItem('authToken');
+
             const response = await fetch(`http://${ipAddr}:5000/createProject`, { 
+                
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     name: projectName,
@@ -58,6 +63,10 @@ export default   function CreateProjectScreen() {
                     router.back();
                     router.replace({ pathname: './team', params: { team_id: params.team_id.toString(), team_name: params.team_name, team_creator_id: params.team_creator_id, user:userID?.toString() } })
                 }, 2000);
+            } else if (response.status === 403) {
+                Alert.alert('Error', 'You don’t have permission for that.');
+            } else if (response.status === 401) {
+                Alert.alert('Error', 'We couldn’t authenticate you.');
             } else {
                 Alert.alert('Error', data.message || 'Failed to create project.');
             }

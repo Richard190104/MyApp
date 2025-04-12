@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import BottomBar from '@/components/bottomBar';
@@ -14,21 +15,28 @@ export default function HomeScreen() {
     const [teams, setTeams] = useState<{ id: number; name: string; creator_id: number }[]>([]);
 
     useEffect(() => {
+
         const fetchUserAndTeams = async () => {
             const id = await getUserId();
-            if (id !== null) {
-                setUser(id);
-                try {
-                    const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${id}`);
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        setTeams(data);
-                    }
-                } catch (error) {
-                    console.error("Error fetching team names:", error);
+            const token = await AsyncStorage.getItem('authToken');
+
+            if (id !== null && token !== null) {
+            setUser(id);
+            try {
+                const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                });
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                setTeams(data);
                 }
+            } catch (error) {
+                console.error("Error fetching team names:", error);
+            }
             } else {
-                console.warn("User ID was null");
+            console.warn("User ID or token was null");
             }
         };
 
