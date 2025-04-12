@@ -61,6 +61,28 @@ const TeamScreen = () => {
 
     const TaskItem = ({ task }: { task: { id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean; parent_task_id: number } }) => {
       const [checked, setChecked] = useState(task.completed);
+
+      function modifyTaskStatus(task: { id: number; completed: boolean }) {
+        fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            task_id: task.id,
+            completed: task.completed,
+          }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Task status modified:', data);
+        })
+        .catch(error => {
+          console.error('Error modifying task status:', error);
+        });
+      }
+
+
       const toggleCheckbox = () => {
         setChecked(!checked);
         task.completed = !checked;
@@ -81,6 +103,7 @@ const TeamScreen = () => {
             }
           });
         }
+        modifyTaskStatus(task);
         setProgress(calculate_percentage(tasks));
       };
       
