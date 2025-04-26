@@ -46,7 +46,7 @@ async function Login(email: string, password: string) {
         <Image source={require('../assets/images/calendar.png')} style={styles.mainLogo} />
         <ButtonMain title="Log In" onPress={() => router.push('/auth/login')} styling={1}></ButtonMain>
         <ButtonMain title="Register" onPress={() => router.push('/auth/register')}></ButtonMain>
-        <ButtonMain title="Skip(odstranit toto potom)" onPress={() => Login("name", "name")}></ButtonMain>
+        <ButtonMain title="Skip(odstranit toto potom)" onPress={() => Login("pukacrichard1@gmail.com", "name")}></ButtonMain>
     </View>
   );
 };

@@ -43,7 +43,7 @@ export default function TopBar() {
                 <Animated.View style={[styles.menu, { transform: [{ translateX: slideAnim }] }]}>
                     <Text style={styles.mainText}>Options</Text>
                     <View style={{width: '100%', display: 'flex', alignItems: 'center', height: '100%', justifyContent: 'center', transform: [{ translateY: -120 }]}}>
-                    <TouchableOpacity style={styles.menuItem}>
+                    <TouchableOpacity style={styles.menuItem} onPress={() => { router.push('/settingsScreens/profile') }}>
                         <Text style={styles.ItemText}>Profile</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.menuItem}>
