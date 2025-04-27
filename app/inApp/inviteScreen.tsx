@@ -1,17 +1,23 @@
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import TopBar from '@/components/topBar';
 import BottomBar from '@/components/bottomBar';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
+import { useRouter } from 'expo-router';
 
 export default function InviteScreen() {
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [invites, setInvites] = useState<
         { invite_id: number; team_name: string; sender_name: string }[]
     >([]);
+    const [user, setUser] = useState<number | null>(null);
+    const [teams, setTeams] = useState<
+        { team_id: number; team_name: string}[]>([]);
 
     useEffect(() => {
         const fetchInvites = async () => {
@@ -45,6 +51,37 @@ export default function InviteScreen() {
             }
         };
     
+        const fetchUserAndTeams = async () => {
+            const id = await getUserId();
+            const token = await AsyncStorage.getItem('authToken');
+
+            if (id !== null && token !== null) {
+            setUser(id);
+            try {
+                const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${id}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+                });
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                setTeams(data.map((team: { id: number; name: string }) => ({
+                    team_id: team.id,
+                    team_name: team.name,
+                })));
+                console.log(teams)
+
+                }
+            } catch (error) {
+                console.error("Error fetching team names:", error);
+            }
+            } else {
+            console.warn("User ID or token was null");
+            }
+        };
+
+        fetchUserAndTeams();
+
         fetchInvites();
     }, []);
 
@@ -141,7 +178,33 @@ export default function InviteScreen() {
                     ))
                 )}
             </View>
+            <Text style={styles.Header}>Chats</Text>
+            <View style={{ width: '100%', flex: 1, alignItems: 'center', marginTop: 20 }}>
 
+                <FlatList
+                    data={teams}
+                    style={styles.chatList}
+                    contentContainerStyle={{
+                        paddingBottom: insets.bottom + 100,  // 🔥
+                      }}
+                    keyExtractor={(item) => item.team_id.toString()}
+                    renderItem={({ item }) => (
+                        <TouchableOpacity
+                            style={styles.chatScreen}
+                            onPress={() =>
+                                router.push({
+                                    pathname: '/inApp/chatScreen',
+                                    params: { team_id: item.team_id, user_id: user },
+                                })
+                            }
+                        >
+                            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                                {item.team_name} Chat
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                />
+            </View>
             <BottomBar />
         </SafeAreaView>
     );
@@ -190,4 +253,15 @@ const styles = StyleSheet.create({
     declineButton: {
         backgroundColor: '#F44336',
     },
+    chatScreen: {
+        backgroundColor: '#e6e6e6',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 10,
+        width: '100%',
+        alignItems: 'center',
+    },
+    chatList: {
+        width: '80%',
+    }, 
 });
