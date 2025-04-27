@@ -31,6 +31,7 @@ export default function HomeScreen() {
                 const data = await response.json();
                 if (Array.isArray(data)) {
                 setTeams(data);
+
                 }
             } catch (error) {
                 console.error("Error fetching team names:", error);
@@ -46,7 +47,7 @@ export default function HomeScreen() {
     return (
         <SafeAreaView style={styles.MainContainer}>
             <TopBar />
-
+            
             <View style={styles.headerRow}>
             <Text style={styles.SmolText}>Teams</Text>
             <TouchableOpacity

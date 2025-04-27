@@ -59,6 +59,15 @@ export const getUserId = async () => {
   }
 };
 
+export const logout = async () => {
+  try {
+    await AsyncStorage.removeItem('authToken');
+    console.log('Auth token removed successfully');
+  } catch (e) {
+    console.error('Error removing auth token', e);
+  }
+  
+};
 
 
 export const storeTeamMembers = async (teamMembers: any[], team_id: number) => {
@@ -79,3 +88,4 @@ export const getTeamMembers = async (team_id: number) => {
     return null;
   }
 }
+

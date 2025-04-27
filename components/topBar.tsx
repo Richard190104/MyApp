@@ -3,6 +3,7 @@ import { View, StyleSheet, SafeAreaView, TouchableOpacity, Text, Animated, Dimen
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { logout } from './getUser';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -27,6 +28,7 @@ export default function TopBar() {
             }).start();
         }
     };
+
 
     return (
         <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
@@ -55,7 +57,14 @@ export default function TopBar() {
                     <TouchableOpacity style={styles.menuItem} onPress={() => { router.push('/settingsScreens/profileScreen') }}>
                         <Text style={styles.ItemText}>Manage Profile</Text>
                     </TouchableOpacity>
+                    <View style={{width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                        <TouchableOpacity style={styles.menuItem} onPress={() => { logout(); router.replace('/') }}>
+                            <Text style={styles.ItemText}>Logout</Text>
+                            <Ionicons name="log-out-outline" size={24} color="black" style={{ marginLeft: 10 }} />
+                        </TouchableOpacity>
                     </View>
+                    </View>
+                    
                 </Animated.View>
             )}
         </SafeAreaView>
@@ -65,7 +74,7 @@ export default function TopBar() {
 const styles = StyleSheet.create({
     safeArea: {
         width: '100%',
-        zIndex: 999, 
+        zIndex: 999,
     },
     mainText: {
         fontSize: 28,

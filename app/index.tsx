@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView, FlatList, StatusBar, StyleSheet, View, TextInput, Button, Text, Image } from "react-native";
 import ButtonMain from "../components/button";
 import { useRouter } from "expo-router";
@@ -6,8 +7,13 @@ import {getUserId, storeUser, storeUserId} from "../components/getUser";
 import {ipAddr} from "../components/backendip"; 
 
 const App = () => {
+  const navigation = useNavigation();
   const router = useRouter();
-
+  useEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: false, 
+    });
+  }, [navigation]);
 async function Login(email: string, password: string) {
        
         try {
