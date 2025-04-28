@@ -9,13 +9,18 @@ type ButtonStyle = {
 
 const ButtonMain = (props: ButtonStyle) => {
     return (
-<View style={styles.container}>
+<View style={styles.container} accessible={true}>
   <TouchableOpacity
     onPress={props.onPress}
     style={[
       styles.buttonStyle,
       props.styling === 1 ? styles.primaryButton : styles.secondaryButton,
     ]}
+   
+    accessibilityLabel="Button on home screen"
+    accessibilityHint="Sends the form"
+    accessibilityRole="button"
+    accessibilityState={{ disabled: false }}
   >
     <Text style={styles.text}>{props.title}</Text>
   </TouchableOpacity>

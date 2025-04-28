@@ -8,9 +8,11 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/components/ThemeContext';
 
 export default function InviteScreen() {
     const router = useRouter();
+    const { theme, toggleTheme } = useTheme();
     const insets = useSafeAreaInsets();
     const [invites, setInvites] = useState<
         { invite_id: number; team_name: string; sender_name: string }[]
@@ -37,7 +39,6 @@ export default function InviteScreen() {
                     },
                 });
                 const data = await response.json();
-                console.log("Fetched invites:", data);
     
                 if (Array.isArray(data)) {
                     setInvites(data);
@@ -69,7 +70,6 @@ export default function InviteScreen() {
                     team_id: team.id,
                     team_name: team.name,
                 })));
-                console.log(teams)
 
                 }
             } catch (error) {
@@ -103,7 +103,6 @@ export default function InviteScreen() {
             });
     
             const data = await response.json();
-            console.log('Accepted response:', data);
     
             if (response.ok) {
                 setInvites(prev => prev.filter(invite => invite.invite_id !== inviteId));
@@ -133,7 +132,6 @@ export default function InviteScreen() {
             });
     
             const data = await response.json();
-            console.log('Declined response:', data);
     
             if (response.ok) {
                 setInvites(prev => prev.filter(invite => invite.invite_id !== inviteId));
@@ -146,29 +144,29 @@ export default function InviteScreen() {
     };
  
     return (
-        <SafeAreaView style={styles.MainContainer}>
+        <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
             <TopBar />
-            <Text style={styles.Header}>Invitations</Text>
+            <Text style={[styles.Header, { color: theme.text }]}>Invitations</Text>
 
             <View style={styles.inviteList}>
                 {invites.length === 0 ? (
-                    <Text style={{ textAlign: 'center', marginTop: 20 }}>No invitations available.</Text>
+                    <Text style={{ textAlign: 'center', marginTop: 20, color: theme.text }}>No invitations available.</Text>
                 ) : (
                     invites.map(invite => (
-                        <View key={invite.invite_id} style={styles.inviteItem}>
-                            <Text style={styles.inviteText}>
+                        <View key={invite.invite_id} style={[styles.inviteItem, { backgroundColor: theme.card }]}>
+                            <Text style={[styles.inviteText, { color: theme.text }]}>
                                 {invite.sender_name} invited you to join{' '}
-                                <Text style={{ fontWeight: 'bold' }}>{invite.team_name}</Text>
+                                <Text style={{ fontWeight: 'bold', color: theme.primary }}>{invite.team_name}</Text>
                             </Text>
                             <View style={styles.inviteButtons}>
                                 <TouchableOpacity
-                                    style={[styles.button, styles.acceptButton]}
+                                    style={[styles.button, { backgroundColor: theme.success }]}
                                     onPress={() => handleAccept(invite.invite_id)}
                                 >
                                     <Ionicons name="checkmark" size={20} color="white" />
                                 </TouchableOpacity>
                                 <TouchableOpacity
-                                    style={[styles.button, styles.declineButton]}
+                                    style={[styles.button, { backgroundColor: theme.danger }]}
                                     onPress={() => handleDecline(invite.invite_id)}
                                 >
                                     <Ionicons name="close" size={20} color="white" />
@@ -178,19 +176,18 @@ export default function InviteScreen() {
                     ))
                 )}
             </View>
-            <Text style={styles.Header}>Chats</Text>
-            <View style={{ width: '100%', flex: 1, alignItems: 'center', marginTop: 20 }}>
 
+            <Text style={[styles.Header, { color: theme.text }]}>Chats</Text>
+
+            <View style={{ width: '100%', flex: 1, alignItems: 'center', marginTop: 20 }}>
                 <FlatList
                     data={teams}
-                    style={styles.chatList}
-                    contentContainerStyle={{
-                        paddingBottom: insets.bottom + 100,  // 🔥
-                      }}
+                    style={{ width: '100%' }}
+                    contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
                     keyExtractor={(item) => item.team_id.toString()}
                     renderItem={({ item }) => (
                         <TouchableOpacity
-                            style={styles.chatScreen}
+                            style={[styles.chatScreen, { backgroundColor: theme.card }]}
                             onPress={() =>
                                 router.push({
                                     pathname: '/inApp/chatScreen',
@@ -198,13 +195,14 @@ export default function InviteScreen() {
                                 })
                             }
                         >
-                            <Text style={{ fontSize: 16, fontWeight: 'bold' }}>
+                            <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>
                                 {item.team_name} Chat
                             </Text>
                         </TouchableOpacity>
                     )}
                 />
             </View>
+
             <BottomBar />
         </SafeAreaView>
     );
@@ -216,7 +214,6 @@ const styles = StyleSheet.create({
         flex: 1,
         width: '100%',
         alignItems: 'center',
-        backgroundColor: '#fff',
     },
     Header: {
         fontSize: 22,
@@ -229,7 +226,6 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     inviteItem: {
-        backgroundColor: '#f2f2f2',
         padding: 15,
         borderRadius: 10,
         marginBottom: 10,
@@ -254,7 +250,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#F44336',
     },
     chatScreen: {
-        backgroundColor: '#e6e6e6',
         padding: 15,
         borderRadius: 10,
         marginBottom: 10,

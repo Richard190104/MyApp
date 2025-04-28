@@ -8,10 +8,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import BottomBar from '@/components/bottomBar';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/components/ThemeContext';
 
 
 export default function ProfileScreen() {
   const router = useRouter();
+    const { theme } = useTheme();
     const [user, setUser] = React.useState<{id: number; username: string; email:string; profile_picture: string | null }>({ id: 0, username: '', email: '', profile_picture: null });
     const [teams, setTeams] = useState<{ id: number; name: string; creator_id: number }[]>([]);
     const [showCodeEnterView, setShowCodeEnterView] = useState(false);
@@ -231,132 +233,136 @@ export default function ProfileScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <Topbar />
-            <Text style={{ fontSize: 20 }}>Profile picture</Text>
-            <TouchableOpacity onPress={handleChangeProfilePicture}>
-                {!user.profile_picture ? (
-                    <MaterialIcons name="circle" size={80} color="gray" style={styles.icon} />
-                ) : (
-                    <Image
-                        source={{ uri: `data:image/jpeg;base64,${user.profile_picture}` }}
-                        style={{ width: 80, height: 80, borderRadius: 40 }}
-                    />
-                )}
-            </TouchableOpacity>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <Topbar />
+
+      <Text style={[styles.title, { color: theme.text }]}>Profile picture</Text>
+
+      <TouchableOpacity onPress={handleChangeProfilePicture} >
+        {!user.profile_picture ? (
+          <MaterialIcons name="circle" size={80} color="gray" style={styles.icon} />
+        ) : (
+          <Image
+            source={{ uri: `data:image/jpeg;base64,${user.profile_picture}` }}
+            style={{ width: 80, height: 80, borderRadius: 40 }}
+          />
+        )}
+      </TouchableOpacity>
 
       <View style={styles.profile}>
-        <MaterialIcons name="account-circle" size={40} color="black" />
+        <MaterialIcons name="account-circle" size={40} color={theme.text} />
         <View style={{ marginLeft: 10 }}>
-            <Text style={styles.name}>{user.username}</Text>
-            <Text style={styles.email}>{user.email}</Text>
+          <Text style={[styles.name, { color: theme.text }]}>{user.username}</Text>
+          <Text style={[styles.email, { color: theme.text }]}>{user.email}</Text>
         </View>
-        
       </View>
+
       {user.email && (
         <View style={{ width: '90%', marginTop: 20 }}>
           <TouchableOpacity
-        style={styles.button}
-        onPress={() => {
-          setShowCodeEnterView(true)
-          handleChangePassword(user.email);
-        }}
-          >
-        <Text style={styles.name}>Change password</Text>
-          </TouchableOpacity>
-          {showCodeEnterView && (
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.sectionTitle}>Enter Code</Text>
-          <TextInput
-            style={{
-          borderWidth: 1,
-          borderColor: 'gray',
-          borderRadius: 5,
-          padding: 10,
-          marginBottom: 10,
-            }}
-            placeholder="Enter the code"
-            value={code}
-            onChangeText={setCode}
-          />
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => VerifyPasswordReset(code)}
-          >
-            <Text style={styles.name}>Verify</Text>
-          </TouchableOpacity>
-        </View>
-          )}
-          {showResetPasswordView && (
-        <View style={{ marginTop: 20 }}>
-          <Text style={styles.sectionTitle}>Reset Password</Text>
-          <TextInput
-            style={{
-              borderWidth: 1,
-              borderColor: 'gray',
-              borderRadius: 5,
-              padding: 10,
-              marginBottom: 10,
-            }}
-            placeholder="Enter new password"
-            secureTextEntry
-            value={newPassword}
-            onChangeText={setNewPassword}
-          />
-          <TouchableOpacity
-            style={styles.button}
+      
+            style={[styles.button, { backgroundColor: theme.primary }]}
             onPress={() => {
-              resetPassword(user.email, code, newPassword);
-              setShowResetPasswordView(false);
+              setShowCodeEnterView(true);
+              handleChangePassword(user.email);
             }}
           >
-            <Text style={styles.name}>Change Password</Text>
+            <Text style={[styles.name, { color: 'white' }]}>Change password</Text>
           </TouchableOpacity>
-        </View>
+
+          {showCodeEnterView && (
+            <View style={{ marginTop: 20 }}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Enter Code</Text>
+              <TextInput
+                style={[styles.input, { color: theme.text, borderColor: theme.card }]}
+                placeholder="Enter the code"
+                placeholderTextColor="gray"
+                value={code}
+                onChangeText={setCode}
+              />
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: theme.primary }]}
+                onPress={() => VerifyPasswordReset(code)}
+              >
+                <Text style={[styles.name, { color: 'white' }]}>Verify</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {showResetPasswordView && (
+            <View style={{ marginTop: 20 }}  >
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Reset Password</Text>
+              <TextInput
+                style={[styles.input, { color: theme.text, borderColor: theme.card }]}
+                placeholder="Enter new password"
+                placeholderTextColor="gray"
+                secureTextEntry
+                value={newPassword}
+                onChangeText={setNewPassword}
+              />
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: theme.primary }]}
+                onPress={() => {
+                  resetPassword(user.email, code, newPassword);
+                  setShowResetPasswordView(false);
+                }}
+              >
+                <Text style={[styles.name, { color: 'white' }]}>Change Password</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
       )}
-      
-      <Text style={styles.sectionTitle}>My Teams</Text>
-           <ScrollView contentContainerStyle={[styles.teamList, { paddingBottom: 80 }]}>
-            {teams.length > 0 ? (
-                teams.map(team => (
-                  <View style={styles.teamButton} key={team.id}>  
-                      <TouchableOpacity
-                        onPress={() => router.push({ pathname: '../inApp/team', params: { team_id: team.id.toString(), team_name: team.name, team_creator_id: team.creator_id, user:user?.toString() } })}
-                        >
-                        <Text style={styles.teamButtonText}>{team.name}</Text>
-                    </TouchableOpacity>   
-                    <MaterialIcons
-                      name="remove-circle"
-                      size={24}
-                      color="gray"
-                      style={{ marginLeft: 10 }}
-                      onPress={() => {
-                        removeFromTeam(team.id, user.id, team.name); 
-                      }}
-                  />
-                  
-                </View>
-                
-                
-                ))
-            ) : (
-                <Text style={styles.noTeamsText}>You are not a member of any team yet.</Text>
-            )}
-            </ScrollView>
-      <BottomBar/>
+
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>My Teams</Text>
+
+      <ScrollView contentContainerStyle={[styles.teamList, { paddingBottom: 80 }]}>
+        {teams.length > 0 ? (
+          teams.map(team => (
+            <View style={[styles.teamButton, { backgroundColor: theme.card }]} key={team.id}>
+              <TouchableOpacity
+                onPress={() => router.push({
+                  pathname: '../inApp/team',
+                  params: {
+                    team_id: team.id.toString(),
+                    team_name: team.name,
+                    team_creator_id: team.creator_id,
+                    user: user?.toString()
+                  }
+                })}
+              >
+                <Text style={[styles.teamButtonText, { color: theme.text }]}>{team.name}</Text>
+              </TouchableOpacity>
+              <MaterialIcons
+                name="remove-circle"
+                size={24}
+                color="gray"
+                style={{ marginLeft: 10 }}
+                onPress={() => removeFromTeam(team.id, user.id, team.name)}
+              />
+            </View>
+          ))
+        ) : (
+          <Text style={[styles.noTeamsText, { color: theme.text }]}>
+            You are not a member of any team yet.
+          </Text>
+        )}
+      </ScrollView>
+
+      <BottomBar />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  title: { fontSize: 20, margin: 10 },
   container: {
     flex: 1,
     alignItems: 'center',
     paddingTop: 40,
     backgroundColor: '#fff',
   },
+  input: { borderWidth: 1, borderRadius: 5, padding: 10, marginBottom: 10 },
   icon: {
     marginBottom: 20,
   },

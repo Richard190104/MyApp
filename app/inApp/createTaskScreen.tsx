@@ -9,6 +9,7 @@ import { getTeamMembers, getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import DropDownPicker from 'react-native-dropdown-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTheme } from '@/components/ThemeContext';
 
 type TeamMember = {
     user_id: number;
@@ -31,6 +32,7 @@ export default function CreateProjectScreen() {
         name: false,
         description: false,
     });
+    const { theme, toggleTheme } = useTheme();
   
     
     useEffect(() => {
@@ -112,86 +114,100 @@ export default function CreateProjectScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <TopBar />
-            <Text style={styles.title}>Create new Task</Text>
-
-            <View style={styles.inputRow}>
-                <TextInput
-                    placeholder="Task headder"
-                    style={[styles.input, errors.name && styles.inputError]}
-                    value={taskName}
-                    onChangeText={(text) => {
-                        setTaskName(text);
-                        if (errors.name && text.trim()) {
-                            setErrors((prev) => ({ ...prev, name: false }));
-                        }
-                    }}
-                />
-                {errors.name && <Text style={styles.errorIcon}>❌</Text>}
-            </View>
-
-            <View style={styles.inputRow}>
-                <TextInput
-                    placeholder="Task description"
-                    style={[styles.input, errors.name && styles.inputError]}
-                    value={description}
-                    onChangeText={(text) => {
-                        setDescription(text);
-                        if (errors.name && text.trim()) {
-                            setErrors((prev) => ({ ...prev, name: false }));
-                        }
-                    }}
-                />
-                {errors.name && <Text style={styles.errorIcon}>❌</Text>}
-            </View>
-
-            <View style={styles.inputRow}>
-                <TextInput
-                    placeholder="Deadline (YYYY-MM-DD)"
-                    style={[styles.input, errors.description && styles.inputError]}
-                    value={deadline}
-                    onChangeText={(text) => {
-                        setdeadline(text);
-                        if (errors.description && text.trim()) {
-                            setErrors((prev) => ({ ...prev, description: false }));
-                        }
-                    }}
-                />
-                {errors.description && <Text style={styles.errorIcon}>❌</Text>}
-            </View>
-
-            <View style={[styles.inputRow, { zIndex: 1000 }]}>
-                <DropDownPicker
-                open={open}
-                value={assign}
-                items={items}
-                setOpen={setOpen}
-                setValue={setassign} 
-                setItems={setItems}
-                placeholder="Select a team member"
-                style={styles.dropdown}
-                textStyle={{
-                    fontSize: 16,
-                    color: '#000',
-                }}
-                dropDownContainerStyle={styles.dropdownContainer}
-                />
-                </View>
-
-            
-            <TouchableOpacity style={styles.createButton} onPress={() => handleCreateTask()}>
-                <Text style={styles.createButtonText}>Create Task</Text>
-            </TouchableOpacity>
-
-            {showToast && (
-                <View style={styles.toastCenter}>
-                    <Text style={styles.toastText}>New Task: {taskName} created!</Text>
-                </View>
-            )}
-
-            <BottomBar />
-        </SafeAreaView>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <TopBar />
+        <Text style={[styles.title, { color: theme.text }]}>Create new Task</Text>
+      
+        <View style={styles.inputRow}>
+          <TextInput
+            placeholder="Task headder"
+            placeholderTextColor={theme.text}
+            style={[
+              styles.input,
+              { color: theme.text, borderColor: theme.text },
+              errors.name && styles.inputError,
+            ]}
+            value={taskName}
+            onChangeText={(text) => {
+              setTaskName(text);
+              if (errors.name && text.trim()) {
+                setErrors((prev) => ({ ...prev, name: false }));
+              }
+            }}
+          />
+          {errors.name && <Text style={[styles.errorIcon, { color: 'red' }]}>❌</Text>}
+        </View>
+      
+        <View style={styles.inputRow}>
+          <TextInput
+            placeholder="Task description"
+            placeholderTextColor={theme.text}
+            style={[
+              styles.input,
+              { color: theme.text, borderColor: theme.text },
+              errors.name && styles.inputError,
+            ]}
+            value={description}
+            onChangeText={(text) => {
+              setDescription(text);
+              if (errors.name && text.trim()) {
+                setErrors((prev) => ({ ...prev, name: false }));
+              }
+            }}
+          />
+          {errors.name && <Text style={[styles.errorIcon, { color: 'red' }]}>❌</Text>}
+        </View>
+      
+        <View style={styles.inputRow}>
+          <TextInput
+            placeholder="Deadline (YYYY-MM-DD)"
+            placeholderTextColor={theme.text}
+            style={[
+              styles.input,
+              { color: theme.text, borderColor: theme.text },
+              errors.description && styles.inputError,
+            ]}
+            value={deadline}
+            onChangeText={(text) => {
+              setdeadline(text);
+              if (errors.description && text.trim()) {
+                setErrors((prev) => ({ ...prev, description: false }));
+              }
+            }}
+          />
+          {errors.description && <Text style={[styles.errorIcon, { color: 'red' }]}>❌</Text>}
+        </View>
+      
+        <View style={[styles.inputRow, { zIndex: 1000 }]}>
+          <DropDownPicker
+            open={open}
+            value={assign}
+            items={items}
+            setOpen={setOpen}
+            setValue={setassign}
+            setItems={setItems}
+            placeholder="Select a team member"
+            style={[styles.dropdown, { backgroundColor: theme.card, borderColor: theme.text }]}
+            textStyle={{
+              fontSize: 16,
+              color: theme.text,
+            }}
+            dropDownContainerStyle={[styles.dropdownContainer, { backgroundColor: theme.card, borderColor: theme.text }]}
+          />
+        </View>
+      
+        <TouchableOpacity style={[styles.createButton, { backgroundColor: theme.primary }]} onPress={handleCreateTask}>
+          <Text style={styles.createButtonText}>Create Task</Text>
+        </TouchableOpacity>
+      
+        {showToast && (
+          <View style={styles.toastCenter}>
+            <Text style={styles.toastText}>New Task: {taskName} created!</Text>
+          </View>
+        )}
+      
+        <BottomBar />
+      </SafeAreaView>
     );
 }
 

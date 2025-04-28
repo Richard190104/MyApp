@@ -18,11 +18,13 @@ const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
+import { useTheme } from '@/components/ThemeContext';
 
 const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function CalendarScreen() {
     const [currentDate, setCurrentDate] = useState(new Date());
+    const { theme, toggleTheme } = useTheme();
 
     interface Task {
       name: string;
@@ -121,7 +123,6 @@ export default function CalendarScreen() {
       if (!hasPermission) return;
 
       const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-      console.log('Here are all your calendars:', calendars);
 
       const defaultCalendar = calendars.find(cal => cal.isPrimary) || calendars[0];
       if (!defaultCalendar) {
@@ -153,7 +154,6 @@ export default function CalendarScreen() {
               notes: task.description,
               timeZone: 'GMT',
             });
-            console.log(`Added task "${task.name}" to calendar.`);
           } 
         }
       }
@@ -181,64 +181,79 @@ export default function CalendarScreen() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-            <Topbar />
-            <View style={{ flex: 1, display: 'flex', justifyContent: 'center', width: '80%', flexDirection: 'column', alignSelf: 'center', marginBottom: 50}}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => changeMonth(-1)}>
-                        <MaterialCommunityIcons name="arrow-left" size={28} />
-                    </TouchableOpacity>
-                    <Text style={styles.monthText}>{monthNames[month]}</Text>
-                    <TouchableOpacity onPress={() => changeMonth(1)}>
-                        <MaterialCommunityIcons name="arrow-right" size={28} />
-                    </TouchableOpacity>
-                </View>
-                <View>
-                  <TouchableOpacity onPress={() => syncCalendar()} style={{ backgroundColor: 'lightgray', padding: 10, borderRadius: 5, alignItems: 'center', marginBottom: 20 }}>
-                    <Text>Sync with Calendar</Text>
-                  </TouchableOpacity>
-                </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+      <Topbar />
+      <View style={{ flex: 1, justifyContent: 'center', width: '80%', flexDirection: 'column', alignSelf: 'center', marginBottom: 50 }}>
+        
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <TouchableOpacity onPress={() => changeMonth(-1)}>
+            <MaterialCommunityIcons name="arrow-left" size={28} color={theme.text} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: theme.text }}>{monthNames[month]}</Text>
+          <TouchableOpacity onPress={() => changeMonth(1)}>
+            <MaterialCommunityIcons name="arrow-right" size={28} color={theme.text} />
+          </TouchableOpacity>
+        </View>
 
-                <FlatList
-                    data={days}
-                    keyExtractor={(item) => item.key}
-                    contentContainerStyle={{ paddingBottom: 20 }}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity 
-                          style={item.task ? styles.dayBoxWithTask : styles.dayBox}
-                          onPress={() => {
-                            if (item.task) {
-                              alert(`Team: ${item.task.teamName}\n Task: ${item.task.name}\nDescription: ${item.task.description}\nAssigned to: ${item.task.assignedTo}`);
-                            }
-                          }}
-                        >
-                          <View>
-                            <Text style={styles.dayNumber}>{item.day}</Text>
-                            <Text style={styles.weekday}>{item.weekday}</Text>
-                          </View>
-                          {item.task && (
-                            <View style={styles.taskInfo}>
-                              <Text style={styles.teamItem}>{item.task.teamName}</Text>
-                              <Text style={styles.taskTeam}>{item.task.name}</Text>
-                              <Text style={styles.taskDescription}>{item.task.description}</Text>
-                              <View style={styles.assignedRow}>
-                                <Text style={styles.assignedText}>Assigned to: {item.task.assignedTo}</Text>
-                                <MaterialCommunityIcons name="account-circle-outline" size={18} color="black" />
-                              </View>
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                    )}
-                />
-            </View>
-            <BottomBar />
-        </SafeAreaView>
+        <TouchableOpacity
+          onPress={() => syncCalendar()}
+          style={{
+            backgroundColor: theme.card,
+            padding: 10,
+            borderRadius: 5,
+            alignItems: 'center',
+            marginBottom: 20,
+          }}
+        >
+          <Text style={{ color: theme.text }}>Sync with Calendar</Text>
+        </TouchableOpacity>
+
+        <FlatList
+          data={days}
+          keyExtractor={(item) => item.key}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={{
+                backgroundColor: item.task ? theme.primary : theme.card,
+                borderRadius: 10,
+                padding: 15,
+                marginBottom: 10,
+                width: '100%',
+              }}
+              onPress={() => {
+                if (item.task) {
+                  alert(`Team: ${item.task.teamName}\nTask: ${item.task.name}\nDescription: ${item.task.description}\nAssigned to: ${item.task.assignedTo}`);
+                }
+              }}
+            >
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: theme.text }}>{item.day}</Text>
+                <Text style={{ fontSize: 14, color: theme.text }}>{item.weekday}</Text>
+              </View>
+
+              {item.task && (
+                <View style={{ marginTop: 10 }}>
+                  <Text style={{ fontSize: 16, fontWeight: 'bold', color: theme.text }}>{item.task.teamName}</Text>
+                  <Text style={{ fontSize: 14, color: theme.text }}>{item.task.name}</Text>
+                  <Text style={{ fontSize: 12, color: theme.text }}>{item.task.description}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
+                    <Text style={{ fontSize: 12, color: theme.text }}>Assigned to: {item.task.assignedTo}</Text>
+                    <MaterialCommunityIcons name="account-circle-outline" size={18} color={theme.text} style={{ marginLeft: 5 }} />
+                  </View>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+      <BottomBar />
+    </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
     paddingHorizontal: 16,
     paddingTop: 20,
   },

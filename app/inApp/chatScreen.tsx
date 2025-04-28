@@ -18,6 +18,7 @@ import {ipAddr} from "@/components/backendip";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomBar from '@/components/bottomBar';
+import { useTheme } from '@/components/ThemeContext';
 
 const socket = io(`http://${ipAddr}:5000`);
 
@@ -25,7 +26,7 @@ const ChatScreen = () => {
   const params = useLocalSearchParams();
   const teamID = params.team_id;
   const userID = parseInt(params.user_id as string);
-
+  const { theme, toggleTheme } = useTheme();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -98,19 +99,20 @@ const ChatScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <KeyboardAvoidingView style={[styles.container, { backgroundColor: theme.background }]} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <TopBar />
+
       <View style={styles.header}>
-        <Text style={styles.headerText}>MTAA Project team chat</Text>
+        <Text style={[styles.headerText, { color: theme.text }]}>MTAA Project team chat</Text>
       </View>
 
       {initialLoading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#70ABAF" />
+          <ActivityIndicator size="large" color={theme.primary} />
         </View>
       ) : (
         <ScrollView
-          style={styles.chatBox}
+          style={[styles.chatBox, { backgroundColor: theme.background }]}
           ref={scrollViewRef}
           scrollEventThrottle={100}
           onScroll={({ nativeEvent }) => {
@@ -120,37 +122,38 @@ const ChatScreen = () => {
           }}
         >
           {loadingMore && (
-            <ActivityIndicator size="small" color="#70ABAF" style={{ marginBottom: 10 }} />
+            <ActivityIndicator size="small" color={theme.primary} style={{ marginBottom: 10 }} />
           )}
 
           {messages.map((msg, index) => {
             const isUser = msg.sender_id === userID;
             return (
-              <View key={index} style={[styles.messageBubble, isUser ? styles.myMessage : styles.otherMessage]}>
+              <View key={index} style={[styles.messageBubble, isUser ? styles.myMessage : styles.otherMessage, { backgroundColor: isUser ? theme.primary : theme.card }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Ionicons name="person-circle-outline" size={16} color="black" style={{ marginRight: 5 }} />
-                  <Text style={styles.senderName}>{isUser ? 'You' : msg.sender_name || 'Member'}</Text>
+                  <Ionicons name="person-circle-outline" size={16} color={theme.text} style={{ marginRight: 5 }} />
+                  <Text style={[styles.senderName, { color: theme.text }]}>{isUser ? 'You' : msg.sender_name || 'Member'}</Text>
                 </View>
-                <Text>{msg.content}</Text>
+                <Text style={{ color: theme.text }}>{msg.content}</Text>
               </View>
             );
           })}
         </ScrollView>
       )}
 
-      <View style={styles.inputRow}>
+      <View style={[styles.inputRow, { backgroundColor: theme.background }]}>
         <TextInput
           placeholder="say something..."
+          placeholderTextColor={theme.text}
           value={newMessage}
           onChangeText={setNewMessage}
-          style={styles.input}
+          style={[styles.input, { color: theme.text, backgroundColor: theme.background, borderColor: theme.primary }]}
         />
         <TouchableOpacity onPress={sendMessage}>
-          <Ionicons name="send" size={24} color="#70ABAF" />
+          <Ionicons name="send" size={24} color={theme.primary} />
         </TouchableOpacity>
       </View>
-      <BottomBar/>
 
+      <BottomBar />
     </KeyboardAvoidingView>
    );
 };
@@ -158,7 +161,6 @@ const ChatScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 10,
     paddingBottom: 20,
   },
@@ -184,11 +186,9 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
   },
   myMessage: {
-    backgroundColor: '#ddd',
     alignSelf: 'flex-end',
   },
   otherMessage: {
-    backgroundColor: '#e0e0e0',
     alignSelf: 'flex-start',
   },
   senderName: {
