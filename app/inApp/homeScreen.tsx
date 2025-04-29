@@ -8,6 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import TopBar from '@/components/topBar';
 import { Ionicons } from '@expo/vector-icons';
 import { ipAddr } from '@/components/backendip';
+import * as Notifications from 'expo-notifications';
+import { Alert } from 'react-native';
 
 export default function HomeScreen() {
     const router = useRouter();
@@ -15,34 +17,37 @@ export default function HomeScreen() {
     const [teams, setTeams] = useState<{ id: number; name: string; creator_id: number }[]>([]);
 
     useEffect(() => {
+        (async () => {
 
-        const fetchUserAndTeams = async () => {
-            const id = await getUserId();
-            const token = await AsyncStorage.getItem('authToken');
+          const { status } = await Notifications.requestPermissionsAsync();
+          if (status !== 'granted') {
+            Alert.alert(
+              'Povolenie notifikácií',
+              'Pre pripomienky deadlinov povoľ notifikácie v nastaveniach.'
+            );
+          }
 
-            if (id !== null && token !== null) {
+          const id = await getUserId();
+          const token = await AsyncStorage.getItem('authToken');
+      
+          if (id !== null && token) {
             setUser(id);
             try {
-                const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${id}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-                });
-                const data = await response.json();
-                if (Array.isArray(data)) {
+              const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${id}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              const data = await response.json();
+              if (Array.isArray(data)) {
                 setTeams(data);
-
-                }
+              }
             } catch (error) {
-                console.error("Error fetching team names:", error);
+              console.error('Error fetching team names:', error);
             }
-            } else {
-            console.warn("User ID or token was null");
-            }
-        };
-
-        fetchUserAndTeams();
-    }, []);
+          } else {
+            console.warn('User ID or token was null');
+          }
+        })();
+      }, []);
 
     return (
         <SafeAreaView style={styles.MainContainer}>

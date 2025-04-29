@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import messaging from '@react-native-firebase/messaging';
 
 export const storeUserId = async (userId: number, token: string) => {
   try {
@@ -61,12 +62,26 @@ export const getUserId = async () => {
 
 export const logout = async () => {
   try {
+    const authToken = await AsyncStorage.getItem('authToken');
+    const fcmToken = await messaging().getToken();
+
+    if (authToken && fcmToken) {
+      await fetch(`http://${ipAddr}:5000/device_token/${fcmToken}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+        },
+        body: JSON.stringify({ is_active: false }),
+      });
+      console.log('FCM token deactivated successfully');
+    }
+
     await AsyncStorage.removeItem('authToken');
     console.log('Auth token removed successfully');
   } catch (e) {
-    console.error('Error removing auth token', e);
+    console.error('Error during logout process', e);
   }
-  
 };
 
 
