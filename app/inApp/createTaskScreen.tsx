@@ -34,32 +34,28 @@ export default function CreateProjectScreen() {
     });
     const { theme, toggleTheme } = useTheme();
   
-    
     useEffect(() => {
         (async () => {
-
-            if (typeof params.team_id === 'string') {
-                const members = await getTeamMembers(parseInt(params.team_id, 10));
-                if (Array.isArray(members)) {
-                    
-    
-                    setItems(
-                        members.map((member) => ({
-                            label: `${member.username}`,
-                            value: member.username,
-                            id: member.user_id,
-                        }))
-                    );
-                    
-
-                } else {
-                    console.error('Invalid team members data:', members);
-                }
+          if (typeof params.team_id === 'string') {
+            const members = await getTeamMembers(parseInt(params.team_id, 10));
+            if (Array.isArray(members)) {
+              setItems(
+                members.map((member) => ({
+                  label: `${member.username}`,
+                  value: member.username,
+                  id: member.user_id,
+                }))
+              );
+            } else {
+              console.error('Invalid team members data:', members);
             }
+          }
+      
+       
         })();
-    }, []);
+      }, []);
 
-    const handleCreateTask = async () => {
+      const handleCreateTask = async () => {
         const userID = await getUserId();
         let assignedToId = items.find(item => item.label === assign)?.id; 
         const nameEmpty = !taskName.trim();
@@ -67,51 +63,62 @@ export default function CreateProjectScreen() {
         const deadlineEmpty = !deadline.trim();
         const token = await AsyncStorage.getItem('authToken');
         if (nameEmpty || descEmpty || deadlineEmpty || !userID) {
-            setErrors({
-                name: nameEmpty,
-                description: descEmpty,
-            });
-            return;
+          setErrors({
+            name: nameEmpty,
+            description: descEmpty,
+          });
+          return;
         }
-
+      
         try {
-            const response = await fetch(`http://${ipAddr}:5000/createTask`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    name: taskName,
-                    deadline: deadline,
-                    description: description,
-                    assign: assignedToId,
-                    project_id: params.project_id,
-                    parent_task_id: null,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                setShowToast(true);
-
-                setTimeout(() => {
-                    setShowToast(false);
-                    router.back();
-                }, 2000);
-            } else if (response.status === 403) {
-                Alert.alert('Error', 'You don’t have permission for that.');
-            } else if (response.status === 401) {
-                Alert.alert('Error', 'We couldn’t authenticate you.');
-            } else {
-                Alert.alert('Error', data.message || 'Failed to create task.');
-            }
+          const response = await fetch(`http://${ipAddr}:5000/createTask`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              name: taskName,
+              deadline: deadline,
+              description: description,
+              assign: assignedToId,
+              project_id: params.project_id,
+              parent_task_id: null,
+            }),
+          });
+      
+          const data = await response.json();
+      
+          if (response.ok) {
+            const existing = await AsyncStorage.getItem('tasks');
+            const existingTasks = existing ? JSON.parse(existing) : [];
+            const newTask = {
+              name: taskName,
+              deadline: deadline,
+              description: description,
+              assign: assignedToId,
+              project_id: params.project_id,
+              parent_task_id: null,
+            };
+            await AsyncStorage.setItem('tasks', JSON.stringify([...existingTasks, newTask]));
+      
+            setShowToast(true);
+            setTimeout(() => {
+              setShowToast(false);
+              router.back();
+            }, 2000);
+          } else if (response.status === 403) {
+            Alert.alert('Error', 'You don’t have permission for that.');
+          } else if (response.status === 401) {
+            Alert.alert('Error', 'We couldn’t authenticate you.');
+          } else {
+            Alert.alert('Error', data.message || 'Failed to create task.');
+          }
         } catch (error) {
-            Alert.alert('Error', 'Something went wrong!');
-            console.error(error);
+          Alert.alert('Error', 'Something went wrong!');
+          console.error(error);
         }
-    };
+      };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
