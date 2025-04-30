@@ -4,11 +4,13 @@ import React, { useState } from 'react';
 import ButtonMain from '@/components/button';
 import {getUserId, storeUser, storeUserId} from "../../components/getUser"; 
 import {ipAddr} from "@/components/backendip"; 
+import { useTheme } from '@/components/ThemeContext';
 
 export default function LoginScreen() {
     const router = useRouter();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const { theme } = useTheme();
 
     async function Login() {
        
@@ -43,19 +45,19 @@ export default function LoginScreen() {
     
       
     return (
-        <View style={styles.MainContainer}>
-            <Text style={styles.MainText}>Log In</Text>
+        <View style={[styles.MainContainer, { backgroundColor: theme.background }]}>
+            <Text style={[styles.MainText, {color: theme.text}]}>Log In</Text>
             <TextInput
-                style={styles.Input}
+                style={[styles.Input, {borderColor: theme.text}]}
                 placeholder="Email..." 
-                placeholderTextColor="gray"
+                placeholderTextColor={theme.text}
                 value={email}
                 onChangeText={setEmail}
             />
             <TextInput
-                style={styles.Input}
+                style={[styles.Input, {borderColor: theme.text, color: theme.text}]}
                 placeholder="Password..."
-                placeholderTextColor="gray"
+                placeholderTextColor={theme.text}
                 secureTextEntry
                 value={password}
                 onChangeText={setPassword}
@@ -83,7 +85,6 @@ const styles = StyleSheet.create({
     },
     Input: {
         height: 50,
-        borderColor: 'gray',
         borderWidth: 1,
         borderRadius: 5,
         width: '80%',

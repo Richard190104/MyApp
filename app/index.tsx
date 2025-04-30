@@ -5,10 +5,14 @@ import ButtonMain from "../components/button";
 import { useRouter } from "expo-router";
 import {getUserId, storeUser, storeUserId} from "../components/getUser"; 
 import {ipAddr} from "../components/backendip"; 
+import { useTheme } from '@/components/ThemeContext';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const App = () => {
   const navigation = useNavigation();
   const router = useRouter();
+  const { theme } = useTheme();
+  
   useEffect(() => {
     navigation.setOptions({
       gestureEnabled: false, 
@@ -47,9 +51,11 @@ async function Login(email: string, password: string) {
 
 
   return (
-    <View style={styles.MainContainer}>
-        <Text style={styles.MainText}>TaskMaster</Text>
-        <Image source={require('../assets/images/calendar.png')} style={styles.mainLogo} />
+    <View style={[styles.MainContainer, { backgroundColor: theme.background }]}>
+        <Text style={[styles.MainText, { color: theme.text }]}>TaskMaster</Text>
+        <View style={styles.mainLogo}>
+          <MaterialIcons name="calendar-today" size={100} color={theme.text} />
+        </View>
         <ButtonMain title="Log In" onPress={() => router.push('/auth/login')} styling={1}></ButtonMain>
         <ButtonMain title="Register" onPress={() => router.push('/auth/register')}></ButtonMain>
         <ButtonMain title="Skip(odstranit toto potom)" onPress={() => Login("pukacrichard1@gmail.com", "name")}></ButtonMain>
@@ -67,16 +73,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
   },
   MainText:{
     fontSize: 50,
     fontWeight: "bold",
   },
   mainLogo:{
-    width: 150,
-    height: 150,
+    width: '100%',
+    height: 100,
     margin: 40,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   }
 });
 

@@ -3,9 +3,10 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import ButtonMain from '@/components/button';
 import {ipAddr} from "@/components/backendip"; 
-
+import { useTheme } from '@/components/ThemeContext';
 export default function RegisterScreen() {
     const router = useRouter();
+    const { theme } = useTheme();
 
     const [email, setEmail] = React.useState('');
     const [username, setName] = React.useState('');
@@ -41,12 +42,34 @@ export default function RegisterScreen() {
     }
 
     return (
-        <View style={styles.MainContainer}>
-            <Text style={styles.MainText}>Register</Text>
-            <TextInput style={styles.Input} placeholder="Name..." placeholderTextColor="gray" onChangeText={(text) => setName(text)}/>
-            <TextInput style={styles.Input} placeholder="Email..." placeholderTextColor="gray" onChangeText={(text) => setEmail(text)}/>
-            <TextInput style={styles.Input} placeholder="Password..." placeholderTextColor="gray" onChangeText={(text) => setPassword(text)} secureTextEntry/>
-            <TextInput style={styles.Input} placeholder="Password..." placeholderTextColor="gray" onChangeText={(text) => setRPassword(text)} secureTextEntry/>
+        <View style={[styles.MainContainer, { backgroundColor: theme.background }]}>
+            <Text style={[styles.MainText, {color: theme.text}]}>Register</Text>
+            <TextInput 
+                style={[styles.Input, { color: theme.text }]} 
+                placeholder="Name..." 
+                placeholderTextColor={theme.text} 
+                onChangeText={(text) => setName(text)}
+            />
+            <TextInput 
+                style={[styles.Input, { color: theme.text }]} 
+                placeholder="Email..." 
+                placeholderTextColor={theme.text} 
+                onChangeText={(text) => setEmail(text)}
+            />
+            <TextInput 
+                style={[styles.Input, { color: theme.text }]} 
+                placeholder="Password..." 
+                placeholderTextColor={theme.text} 
+                onChangeText={(text) => setPassword(text)} 
+                secureTextEntry
+            />
+            <TextInput 
+                style={[styles.Input, { color: theme.text }]} 
+                placeholder="Password..." 
+                placeholderTextColor={theme.text} 
+                onChangeText={(text) => setRPassword(text)} 
+                secureTextEntry
+            />
             <ButtonMain title="Register" onPress={register} styling={1}></ButtonMain>
             <Button title="Login" onPress={() => router.replace("/auth/login") } /> 
         </View>

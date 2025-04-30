@@ -18,11 +18,11 @@ const defaultLightTheme = {
 
 const defaultDarkTheme = {
   mode: 'dark',
-  background: '#000000',
-  text: '#ffffff',
-  card: '#1c1c1c',
+  background: '#121212',
+  text: '#e0e0e0',
+  card: '#2a2a2a',
   primary: '#70ABAF',
-  bottombar: '#2c2c2c',
+  bottombar: '#3a3a3a',
   success: '#28a745',
   danger: '#dc3545',
   buttonBackground: '#70ABAF',   

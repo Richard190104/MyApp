@@ -1,5 +1,6 @@
 import React from "react";
 import { Text, View, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from "react-native";
+import { useTheme } from '@/components/ThemeContext';
 
 type ButtonStyle = {
     title: string;
@@ -7,7 +8,10 @@ type ButtonStyle = {
     styling?: number;
 }
 
+
 const ButtonMain = (props: ButtonStyle) => {
+    const { theme } = useTheme();
+  
     return (
 <View style={styles.container} accessible={true}>
   <TouchableOpacity
@@ -15,6 +19,7 @@ const ButtonMain = (props: ButtonStyle) => {
     style={[
       styles.buttonStyle,
       props.styling === 1 ? styles.primaryButton : styles.secondaryButton,
+      {backgroundColor: theme.primary }
     ]}
    
     accessibilityLabel="Button on home screen"
@@ -22,7 +27,7 @@ const ButtonMain = (props: ButtonStyle) => {
     accessibilityRole="button"
     accessibilityState={{ disabled: false }}
   >
-    <Text style={styles.text}>{props.title}</Text>
+    <Text style={[styles.text, {color: theme.text}]}>{props.title}</Text>
   </TouchableOpacity>
 </View>
 
@@ -40,7 +45,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
     },
     buttonStyle:{
-        backgroundColor: "blue",
         padding: 10,
         borderRadius:  5,
         width: "80%",
@@ -54,11 +58,10 @@ const styles = StyleSheet.create({
         fontSize: 20,
     },
     primaryButton: {
-        backgroundColor: "#70ABAF",
+      height: 60,
       },
     secondaryButton: {
-        backgroundColor: "#32292F",
-    
+      height: 50,
       },
 });
 
