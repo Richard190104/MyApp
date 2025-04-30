@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { logout } from './getUser';
+import { useTheme } from '@/components/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -11,6 +12,7 @@ export default function TopBar() {
     const insets = useSafeAreaInsets();
     const [menuVisible, setMenuVisible] = React.useState(false);
     const slideAnim = React.useRef(new Animated.Value(-screenWidth)).current;
+    const { theme, toggleTheme } = useTheme();
 
     const toggleMenu = () => {
         if (menuVisible) {
@@ -29,42 +31,46 @@ export default function TopBar() {
         }
     };
 
-
     return (
-        <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top }]}>
-            <View style={styles.container}>
+        <SafeAreaView style={[styles.safeArea, { paddingTop: insets.top, backgroundColor: theme.background }]}>
+            <View style={[styles.container, { backgroundColor: theme.background }]}>
                 <TouchableOpacity style={styles.iconLeft} onPress={toggleMenu}>
-                    <Ionicons name="menu" size={40} color="gray" />
+                    <Ionicons name="menu" size={40} color={theme.text} />
                 </TouchableOpacity>
-                <MaterialCommunityIcons name="calendar-clock" size={50} color="black" style={styles.iconCenter} />
+                <MaterialCommunityIcons name="calendar-clock" size={50} color={theme.text} style={styles.iconCenter} />
                 <TouchableOpacity style={styles.iconRight} onPress={() => { router.back() }}>
-                    <Ionicons name="arrow-back" size={40} color="black" />
+                    <Ionicons name="arrow-back" size={40} color={theme.text} />
                 </TouchableOpacity>
             </View>
+
             {menuVisible && (
-                <Animated.View style={[styles.menu, { transform: [{ translateX: slideAnim }] }]}>
-                    <Text style={styles.mainText}>Options</Text>
-                    <View style={{width: '100%', display: 'flex', alignItems: 'center', height: '100%', justifyContent: 'center', transform: [{ translateY: -120 }]}}>
-                    <TouchableOpacity style={styles.menuItem} onPress={() => { router.push('/settingsScreens/profile') }}>
-                        <Text style={styles.ItemText}>Profile</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem}>
-                        <Text style={styles.ItemText}>Notifications</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem}>
-                        <Text style={styles.ItemText}>Dark Mode</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.menuItem} onPress={() => { router.push('/settingsScreens/profileScreen') }}>
-                        <Text style={styles.ItemText}>Manage Profile</Text>
-                    </TouchableOpacity>
-                    <View style={{width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                        <TouchableOpacity style={styles.menuItem} onPress={() => { logout(); router.replace('/') }}>
-                            <Text style={styles.ItemText}>Logout</Text>
-                            <Ionicons name="log-out-outline" size={24} color="black" style={{ marginLeft: 10 }} />
+                <Animated.View style={[styles.menu, { transform: [{ translateX: slideAnim }], backgroundColor: theme.background }]}>
+                    <Text style={[styles.mainText, { color: theme.text }]}>Options</Text>
+                    <View style={{ width: '100%', display: 'flex', alignItems: 'center', height: '100%', justifyContent: 'center', transform: [{ translateY: -120 }] }}>
+                        
+                        <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => { router.push('/settingsScreens/profile') }}>
+                            <Text style={[styles.ItemText, { color: theme.text }]}>Profile</Text>
                         </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]}>
+                            <Text style={[styles.ItemText, { color: theme.text }]}>Notifications</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => {router.push('/inApp/themesManagement')}}>
+                            <Text style={[styles.ItemText, { color: theme.text }]}>Dark Mode</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => { router.push('/settingsScreens/profileScreen') }}>
+                            <Text style={[styles.ItemText, { color: theme.text }]}>Manage Profile</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => { logout(); router.replace('/') }}>
+                                <Text style={[styles.ItemText, { color: theme.text }]}>Logout</Text>
+                                <Ionicons name="log-out-outline" size={24} color={theme.text} style={{ marginLeft: 10 }} />
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                    </View>
-                    
                 </Animated.View>
             )}
         </SafeAreaView>
@@ -79,7 +85,6 @@ const styles = StyleSheet.create({
     mainText: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: 'black',
     },
     container: {
         flexDirection: 'row',
@@ -88,8 +93,7 @@ const styles = StyleSheet.create({
         height: 90,
         paddingHorizontal: 10,
         width: '100%',
-        backgroundColor: 'white', 
-        zIndex: 10000, 
+        zIndex: 10000,
         marginBottom: 10,
     },
     iconLeft: {
@@ -108,20 +112,17 @@ const styles = StyleSheet.create({
     },
     menu: {
         position: 'absolute',
-        top: 90, 
+        top: 90,
         left: 0,
         height: Dimensions.get('window').height - 90,
         width: '100%',
-        backgroundColor: 'white',
-        zIndex: 999, 
+        zIndex: 999,
         padding: 10,
         display: 'flex',
         alignItems: 'center',
-
     },
     menuItem: {
         padding: 10,
-        backgroundColor: 'lightgray',
         width: '80%',
         display: 'flex',
         alignItems: 'center',
@@ -132,8 +133,5 @@ const styles = StyleSheet.create({
     },
     ItemText: {
         fontSize: 18,
-        color: 'black',
-    }
+    },
 });
-
-

@@ -8,6 +8,7 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { ipAddr } from "@/components/backendip";
 import { useFocusEffect } from '@react-navigation/native';
 import React from "react";
+import { useTheme } from '@/components/ThemeContext';
 
 
 const TeamScreen = () => {
@@ -15,6 +16,8 @@ const TeamScreen = () => {
     const [teamMembers,setTeamMembers] = useState<{user_id:number; username:string; email:string; role:string}[]>([]);
     const [tasks, setTasks] = useState<{id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean, parent_task_id: number}[]>([]);
     const [progress, setProgress] = useState(0);
+    const { theme, toggleTheme } = useTheme();
+    
     function calculate_percentage(tasks:{completed: boolean}[]){
         let completed = 0;
         tasks.forEach((task) => {
@@ -60,14 +63,15 @@ const TeamScreen = () => {
     const SubTaskItem = ({ task }: { task: { id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean } }) => {
         const [checked, setChecked] = useState(task.completed);
         return (
-            <TouchableOpacity
-              style={styles.subtaskContainer}
-              onPress={() => setChecked(!checked)}
-            >
-              <Text style={styles.taskText}>{task.name}</Text>
-              {task.assigned_to === Number(params.user_id) && (<Ionicons name="person-outline" size={24} color="black" />
-              )}    
-            </TouchableOpacity>
+          <TouchableOpacity
+          style={[styles.subtaskContainer, { backgroundColor: theme.card }]}
+          onPress={() => setChecked(!checked)}
+      >
+          <Text style={[styles.taskText, { color: theme.text }]}>{task.name}</Text>
+          {task.assigned_to === Number(params.user_id) && (
+              <Ionicons name="person-outline" size={24} color={theme.text} />
+          )}
+      </TouchableOpacity>
           );
       };
 
@@ -146,47 +150,62 @@ const TeamScreen = () => {
       };
 
       return (
-      <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/taskScreen', params: {team_name: params.team_name,project_id: params.project_id, team_id: params.team_id, task_id: task.id, task_name: task.name, task_description: task.description, task_assigned_to: task.assigned_to, task_deadline: task.deadline ? task.deadline.toString() : '', task_completed: task.completed ? task.completed.toString() : '', user_id: params.user_id }})}
-      style={styles.taskContainer}
-      >
         <TouchableOpacity
-        style={[styles.checkbox, checked && { backgroundColor: 'gray' }]}
-        onPress={() => modifyTaskStatus(task)}
+        onPress={() => router.push({ pathname: '/inApp/taskScreen', params: { 
+            team_name: params.team_name, 
+            project_id: params.project_id, 
+            team_id: params.team_id, 
+            task_id: task.id, 
+            task_name: task.name, 
+            task_description: task.description, 
+            task_assigned_to: task.assigned_to, 
+            task_deadline: task.deadline ? task.deadline.toString() : '', 
+            task_completed: task.completed ? task.completed.toString() : '', 
+            user_id: params.user_id } })}
+        style={[styles.taskContainer, { backgroundColor: theme.card }]}
+    >
+        <TouchableOpacity
+            style={[styles.checkbox, { borderColor: theme.text }, checked && { backgroundColor: theme.primary }]}
+            onPress={() => modifyTaskStatus(task)}
         >
-        {checked && <Ionicons name="checkmark" size={16} color="white" />}
+            {checked && <Ionicons name="checkmark" size={16} color="white" />}
         </TouchableOpacity>
-        <Text style={styles.taskText}>{task.name}</Text>
-        {task.assigned_to === Number(params.user_id) && (<Ionicons name="person-outline" size={24} color="black" />)}
-      </TouchableOpacity>
+        <Text style={[styles.taskText, { color: theme.text }]}>{task.name}</Text>
+        {task.assigned_to === Number(params.user_id) && (
+            <Ionicons name="person-outline" size={24} color={theme.text} />
+        )}
+    </TouchableOpacity>
       );
     };
      
 
   return (
-<SafeAreaView style={styles.MainContainer}>
+    <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
     <TopBar />
-    <Text style={styles.mainText}>{params.team_name}</Text>
+    <Text style={[styles.mainText, { color: theme.text }]}>{params.team_name}</Text>
     <View style={[styles.MainContainer, { marginBottom: 60 }]}>
         <View style={styles.headerRow}>
-            <FontAwesome name="tasks" size={32} color="black" style={{ maxWidth: '30%' }} />
-            <Text style={[styles.SmolText, { paddingLeft: 10 }]}>{params.project_name}</Text>
+            <FontAwesome name="tasks" size={32} color={theme.text} style={{ maxWidth: '30%' }} />
+            <Text style={[styles.SmolText, { paddingLeft: 10, color: theme.text }]}>{params.project_name}</Text>
             <View style={{ maxWidth: '70%', width: '70%' }}>
                 <View style={styles.container}>
-                    <View style={styles.progressBackground}>
-                        <View style={[styles.progressFill, { width: `${progress}%` }]} />
+                    <View style={[styles.progressBackground, { backgroundColor: theme.card }]}>
+                        <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.primary }]} />
                     </View>
-                    <Text style={styles.text}>{progress}%</Text>
+                    <Text style={[styles.text, { color: theme.text }]}>{progress}%</Text>
                 </View>
             </View>
         </View>
+
         <View style={styles.headerRow}>
-          <TouchableOpacity
-                    onPress={() => router.push({ pathname: '/inApp/createTaskScreen', params: {project_id: params.project_id, team_id: params.team_id }})}
-                    style={styles.addButton}
-                >
-                    <Ionicons name="add" size={24} color="white" />
-          </TouchableOpacity>
+            <TouchableOpacity
+                onPress={() => router.push({ pathname: '/inApp/createTaskScreen', params: { project_id: params.project_id, team_id: params.team_id } })}
+                style={[styles.addButton, { backgroundColor: theme.primary }]}
+            >
+                <Ionicons name="add" size={24} color="white" />
+            </TouchableOpacity>
         </View>
+
         <FlatList
             style={{ width: "100%" }}
             data={tasks.filter(task => task.parent_task_id == null)}
@@ -208,6 +227,7 @@ const TeamScreen = () => {
     </View>
     <BottomBar />
 </SafeAreaView>
+
   );
 };
 
@@ -218,7 +238,6 @@ const styles = StyleSheet.create({
         flex: 1,
         width: "100%",
         alignItems: "center",
-        backgroundColor: "#f9f9f9",
        
     },
     SmolText: {
@@ -237,7 +256,6 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     addButton: {
-        backgroundColor: "#70ABAF",
         padding: 10,
         borderRadius: 10,
         shadowColor: "#000",
@@ -254,7 +272,6 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     teamButton: {
-        backgroundColor: '#e0e0e0',
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 10,
@@ -309,13 +326,11 @@ const styles = StyleSheet.create({
       progressBackground: {
         width: 200,
         height: 20,
-        backgroundColor: '#d3d3d3', // svetlosivá
         borderRadius: 10,
         overflow: 'hidden',
       },
       progressFill: {
         height: '100%',
-        backgroundColor: 'gray',
         borderRadius: 10,
       },
       text: {
@@ -326,7 +341,6 @@ const styles = StyleSheet.create({
       taskContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#dcdcdc', // svetlosivá
         padding: 12,
         borderRadius: 8,
         marginTop: 12,
@@ -343,7 +357,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
-        backgroundColor: 'white',
       },
       taskText: {
         flex: 1,
@@ -352,7 +365,6 @@ const styles = StyleSheet.create({
       subtaskContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#dcdcdc', 
         padding: 10,
         borderColor: '#333',
         justifyContent: 'space-between',

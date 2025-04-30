@@ -1,7 +1,9 @@
 import { View, StyleSheet, TouchableOpacity, Image, SafeAreaView, Platform } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React from "react";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/components/ThemeContext';
 
 function goMainPage(){
     router.push('/inApp/homeScreen');
@@ -19,18 +21,19 @@ function goCalendar(){
 
 const BottomBar = () => {
     const insets = useSafeAreaInsets(); 
+    const { theme, toggleTheme } = useTheme();
 
     return (
-        <SafeAreaView style={[styles.safeArea, { paddingBottom: insets.bottom }]}>
+        <SafeAreaView style={[styles.safeArea, { paddingBottom: insets.bottom,  backgroundColor: theme.bottombar  }]}>
             <View style={styles.container}>
                 <TouchableOpacity onPress={goMainPage}>
-                    <Image source={require('../assets/images/main.png')} style={styles.icon}/>
+                    <MaterialIcons name="home" size={35} color={theme.text} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={goChat}>
-                    <Image source={require('../assets/images/chat.png')} style={styles.icon}/>
+                    <MaterialIcons name="chat" size={35} color={theme.text} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={goCalendar}>
-                    <Image source={require('../assets/images/calendar.png')} style={styles.icon}/>
+                    <MaterialIcons name="calendar-today" size={35} color={theme.text} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -46,11 +49,9 @@ const styles = StyleSheet.create({
         height: 80,
         borderRadius: 25,
         zIndex: 1000,
-        backgroundColor: "#fff",
     },
     container: {
-        borderColor: "#32292F",
-        borderWidth: 2,
+
         height: 80,
         justifyContent: "space-around",
         alignItems: "center",

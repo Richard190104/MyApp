@@ -11,6 +11,7 @@ import { getTeamMembers } from "@/components/getUser";
 import { useFocusEffect } from '@react-navigation/native';
 import React from "react";
 import * as Speech from 'expo-speech';
+import { useTheme } from '@/components/ThemeContext';
 
 const TaskScreen = () => {
   const params = useLocalSearchParams();
@@ -20,6 +21,8 @@ const TaskScreen = () => {
   const taskId = Number(Array.isArray(params.task_id) ? params.task_id[0] : params.task_id);
   const [showRoleOptions, setShowRoleOptions] = useState<{ [key: string]: boolean }>({});
   const [members, setMembers] = useState<{ user_id: number; username: string; role: string }[]>([]);
+  const { theme, toggleTheme } = useTheme();
+  
   const speak = () => {
     const text = `Hello, you are on the task screen. The task name is ${params.task_name} and it is assigned to ${assignedMember}.`;
     Speech.speak(text, { language: 'en-US', pitch: 1.0, rate: 1.0 });
@@ -40,7 +43,6 @@ const TaskScreen = () => {
             (member) => member.user_id === parseInt(Array.isArray(params.user_id) ? params.user_id[0] : params.user_id, 10)
           );
           setUserRole( currentUser ? currentUser.role : null);
-          console.log('User role:', currentUser ? currentUser.role : null);
         } else {
           console.error('Invalid team members data:', members);
         }
@@ -137,15 +139,15 @@ const TaskScreen = () => {
     return (
       <TouchableOpacity 
         onPress={() => router.push({ pathname: '/inApp/taskScreen', params: { ...params, task_id: task.id, task_name: task.name, task_description: task.description, task_assigned_to: task.assigned_to, task_deadline: task.deadline ? task.deadline.toString() : '', task_completed: task.completed.toString() } })}
-        style={styles.taskContainer}
+        style={[styles.taskContainer, { backgroundColor: theme.card }]}
       >
         <TouchableOpacity
-          style={[styles.checkbox, task.completed && { backgroundColor: 'gray' }]}
+          style={[styles.checkbox, task.completed && { backgroundColor: theme.card }]}
           onPress={async () => await handleCheckboxPress(task.id, !task.completed)}
         >
           {task.completed && <Ionicons name="checkmark" size={16} color="white" />}
         </TouchableOpacity>
-        <Text style={styles.taskText}>{task.name}</Text>
+        <Text style={[styles.taskText, {color: theme.text}]}>{task.name}</Text>
         {task.assigned_to === Number(params.user_id) && (<Ionicons name="person-outline" size={24} color="black" />)}
       </TouchableOpacity>
     );
@@ -195,89 +197,95 @@ const TaskScreen = () => {
   
 
   return (
-    <SafeAreaView style={styles.MainContainer}>
-      <TopBar />
-      <View style={styles.container}>
-        <Text style={styles.title}>{params.team_name}</Text>
+    <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
+  <TopBar />
+  <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <Text style={[styles.title, { color: theme.text }]}>{params.team_name}</Text>
 
-        <Text style={styles.header}>{params.task_name}</Text>
+    <Text style={[styles.header, { color: theme.text }]}>{params.task_name}</Text>
 
-        <View style={styles.assignContainer}>
-          <MaterialIcons name="account-circle" size={30} color="black" />
-          <Text style={styles.assignedText}>Assigned to: {assignedMember}</Text>
-            {(userRole === 'owner' || userRole === 'admin' || params.user_id === params.task_assigned_to) && (
-            <TouchableOpacity onPress={() => setShowRoleOptions(prevState => ({ ...prevState, [String(params.task_assigned_to)]: true }))} style={{ marginLeft: 10 }}>
-              <FontAwesome name="pencil" size={24} color="black" />
-            </TouchableOpacity>
-            )}
+    <View style={styles.assignContainer}>
+      <MaterialIcons name="account-circle" size={30} color={theme.text} />
+      <Text style={[styles.assignedText, { color: theme.text }]}>Assigned to: {assignedMember}</Text>
 
-            {showRoleOptions[String(params.task_assigned_to)] && (
-              <Modal
-              transparent
-              visible={showRoleOptions[String(Array.isArray(params.task_assigned_to) ? params.task_assigned_to[0] : params.task_assigned_to)]}
-              animationType="slide"
-              onRequestClose={() => setShowRoleOptions(prevState => ({ ...prevState, [String(params.task_assigned_to)]: false }))}
-              >
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContainer}>
-                <Text style={styles.modalTitle}>Assign task to a team member</Text>
-                {typeof params.team_id === 'string' && (
-                  <FlatList
+      {(userRole === 'owner' || userRole === 'admin' || params.user_id === params.task_assigned_to) && (
+        <TouchableOpacity onPress={() => setShowRoleOptions(prevState => ({ ...prevState, [String(params.task_assigned_to)]: true }))} style={{ marginLeft: 10 }}>
+          <FontAwesome name="pencil" size={24} color={theme.text} />
+        </TouchableOpacity>
+      )}
+
+      {showRoleOptions[String(params.task_assigned_to)] && (
+        <Modal
+          transparent
+          visible={showRoleOptions[String(Array.isArray(params.task_assigned_to) ? params.task_assigned_to[0] : params.task_assigned_to)]}
+          animationType="slide"
+          onRequestClose={() => setShowRoleOptions(prevState => ({ ...prevState, [String(params.task_assigned_to)]: false }))}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContainer, { backgroundColor: theme.card }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Assign task to a team member</Text>
+              {typeof params.team_id === 'string' && (
+                <FlatList
                   data={members}
                   keyExtractor={(item) => item.user_id.toString()}
                   renderItem={({ item }) => (
                     <TouchableOpacity
-                    onPress={async () => {
-                      modifyTaskAssignedTo(taskId, item.user_id);
-                      setShowRoleOptions(prevState => ({ ...prevState, [String(params.task_assigned_to)]: false }));
-                    }}
-                    style={styles.optionButton}
+                      onPress={async () => {
+                        modifyTaskAssignedTo(taskId, item.user_id);
+                        setShowRoleOptions(prevState => ({ ...prevState, [String(params.task_assigned_to)]: false }));
+                      }}
+                      style={[styles.optionButton, { backgroundColor: theme.primary }]}
                     >
-                    <Text style={styles.optionText}>{item.username}</Text>
+                      <Text style={{ color: 'white' }}>{item.username}</Text>
                     </TouchableOpacity>
                   )}
-                  />
-                )}
-                <TouchableOpacity onPress={() => setShowRoleOptions({})}>
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </TouchableOpacity>
-                </View>
-              </View>
-              </Modal>
-            )}
-        </View>
+                />
+              )}
+              <TouchableOpacity onPress={() => setShowRoleOptions({})}>
+                <Text style={[styles.cancelText, { color: theme.primary }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+    </View>
 
-        <View style={{width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start'}}>
-          <Text style={styles.subHeader}>Description</Text>
-        </View>
-        <Text style={styles.description}>{params.task_description}</Text>
+    <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start' }}>
+      <Text style={[styles.subHeader, { color: theme.text }]}>Description</Text>
+    </View>
+    <Text style={[styles.description, { color: theme.text }]}>{params.task_description}</Text>
 
-        <Text style={styles.subHeader}>Subtasks</Text>
-        <FlatList
-          data={tasks.filter(task => task.parent_task_id === taskId)}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => <TaskItem task={item} />}
-          contentContainerStyle={{ padding: 16 }}
-        />
+    <Text style={[styles.subHeader, { color: theme.text }]}>Subtasks</Text>
 
-        <View style={[styles.statusContainer, { marginBottom: 80 }]}>
-          <TouchableOpacity
-            style={[styles.checkbox, mainTask?.completed && { backgroundColor: 'gray' }]}
-            onPress={async () => {
-              if (mainTask) {
-                await handleCheckboxPress(mainTask.id, !mainTask.completed);
-              }
-            }}
-          >
-            {mainTask?.completed && <Ionicons name="checkmark" size={16} color="white" />}
-          </TouchableOpacity>
-          <Text style={styles.statusText}>
-            {mainTask?.completed ? 'Task is completed' : 'Task is not completed'}
-          </Text>
-        </View>
-      </View>
-      <BottomBar />
-    </SafeAreaView>
+    <FlatList
+      data={tasks.filter(task => task.parent_task_id === taskId)}
+      keyExtractor={item => item.id.toString()}
+      renderItem={({ item }) => <TaskItem task={item} />}
+      contentContainerStyle={{ padding: 16 }}
+    />
+
+    <View style={[styles.statusContainer, { marginBottom: 80 }]}>
+      <TouchableOpacity
+        style={[
+          styles.checkbox,
+          { borderColor: theme.text },
+          mainTask?.completed && { backgroundColor: theme.primary }
+        ]}
+        onPress={async () => {
+          if (mainTask) {
+            await handleCheckboxPress(mainTask.id, !mainTask.completed);
+          }
+        }}
+      >
+        {mainTask?.completed && <Ionicons name="checkmark" size={16} color="white" />}
+      </TouchableOpacity>
+      <Text style={[styles.statusText, { color: theme.text }]}>
+        {mainTask?.completed ? 'Task is completed' : 'Task is not completed'}
+      </Text>
+    </View>
+  </View>
+  <BottomBar />
+</SafeAreaView>
   );
 };
 

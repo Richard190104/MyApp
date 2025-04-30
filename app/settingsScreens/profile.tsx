@@ -8,10 +8,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 import BottomBar from '@/components/bottomBar';
 import { useRouter } from 'expo-router';
+import { useTheme } from '@/components/ThemeContext';
 
 
 export default function ProfileScreen() {
   const router = useRouter();
+    const { theme } = useTheme();
+  
     const [user, setUser] = React.useState<{id: number; username: string; email:string; profile_picture: string | null }>({ id: 0, username: '', email: '', profile_picture: null });
     const [teams, setTeams] = useState<{ id: number; name: string; creator_id: number }[]>([]);
 
@@ -60,41 +63,54 @@ export default function ProfileScreen() {
 
 
     return (
-        <SafeAreaView style={styles.container}>
-            <Topbar />
-                {!user.profile_picture ? (
-                    <MaterialIcons name="circle" size={80} color="gray" style={styles.icon} />
-                ) : (
-                    <Image
-                        source={{ uri: `data:image/jpeg;base64,${user.profile_picture}` }}
-                        style={{ width: 80, height: 80, borderRadius: 40 }}
-                    />
-                )}
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <Topbar />
 
-        <View style={styles.profile}>
-            <View style={{width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                <Text style={styles.name}>{user.username}</Text>
-                <Text style={styles.email}>{user.email}</Text>
-            </View>
+      {!user.profile_picture ? (
+        <MaterialIcons name="circle" size={80} color="gray" style={styles.icon} />
+      ) : (
+        <Image
+          source={{ uri: `data:image/jpeg;base64,${user.profile_picture}` }}
+          style={{ width: 80, height: 80, borderRadius: 40 }}
+        />
+      )}
+
+      <View style={styles.profile}>
+        <View style={{ width: '100%', flexDirection: 'column', alignItems: 'center' }}>
+          <Text style={[styles.name, { color: theme.text }]}>{user.username}</Text>
+          <Text style={[styles.email, { color: theme.text }]}>{user.email}</Text>
         </View>
+      </View>
 
-      <Text style={styles.sectionTitle}>My Teams</Text>
-           <ScrollView contentContainerStyle={[styles.teamList, { paddingBottom: 80 }]}>
-            {teams.length > 0 ? (
-                teams.map(team => (
-                <TouchableOpacity
-                    key={team.id}
-                    style={styles.teamButton}
-                    onPress={() => router.push({ pathname: '../inApp/team', params: { team_id: team.id.toString(), team_name: team.name, team_creator_id: team.creator_id, user:user?.toString() } })}
-                >
-                    <Text style={styles.teamButtonText}>{team.name}</Text>
-                </TouchableOpacity>
-                ))
-            ) : (
-                <Text style={styles.noTeamsText}>You are not a member of any team yet.</Text>
-            )}
-            </ScrollView>
-      <BottomBar/>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>My Teams</Text>
+
+      <ScrollView contentContainerStyle={[styles.teamList, { paddingBottom: 80 }]}>
+        {teams.length > 0 ? (
+          teams.map(team => (
+            <TouchableOpacity
+              key={team.id}
+              style={[styles.teamButton, { backgroundColor: theme.card }]}
+              onPress={() => router.push({
+                pathname: '../inApp/team',
+                params: {
+                  team_id: team.id.toString(),
+                  team_name: team.name,
+                  team_creator_id: team.creator_id,
+                  user: user?.toString()
+                }
+              })}
+            >
+              <Text style={[styles.teamButtonText, { color: theme.text }]}>{team.name}</Text>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={[styles.noTeamsText, { color: theme.text }]}>
+            You are not a member of any team yet.
+          </Text>
+        )}
+      </ScrollView>
+
+      <BottomBar />
     </SafeAreaView>
   );
 }

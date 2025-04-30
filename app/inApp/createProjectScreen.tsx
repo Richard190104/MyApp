@@ -8,6 +8,7 @@ import TopBar from '@/components/topBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
+import { useTheme } from '@/components/ThemeContext';
 
 export default   function CreateProjectScreen() {
     const params = useLocalSearchParams();
@@ -19,6 +20,7 @@ export default   function CreateProjectScreen() {
         name: false,
         description: false,
     });
+    const { theme, toggleTheme } = useTheme();
   
     const handleCreateTeam = async () => {
         const userID = await getUserId();
@@ -78,52 +80,62 @@ export default   function CreateProjectScreen() {
     
 
     return (
-        <SafeAreaView style={styles.container}>
-            <TopBar />
-            <Text style={styles.title}>Create new Project</Text>
-
-            <View style={styles.inputRow}>
-                <TextInput
-                    placeholder="Project name"
-                    style={[styles.input, errors.name && styles.inputError]}
-                    value={projectName}
-                    onChangeText={(text) => {
-                        setprojectName(text);
-                        if (errors.name && text.trim()) {
-                            setErrors((prev) => ({ ...prev, name: false }));
-                        }
-                    }}
-                />
-                {errors.name && <Text style={styles.errorIcon}>❌</Text>}
-            </View>
-
-            <View style={styles.inputRow}>
-                <TextInput
-                    placeholder="Deadline (YYYY-MM-DD)"
-                    style={[styles.input, errors.description && styles.inputError]}
-                    value={deadline}
-                    onChangeText={(text) => {
-                        setdeadline(text);
-                        if (errors.description && text.trim()) {
-                            setErrors((prev) => ({ ...prev, description: false }));
-                        }
-                    }}
-                />
-                {errors.description && <Text style={styles.errorIcon}>❌</Text>}
-            </View>
-
-            <TouchableOpacity style={styles.createButton} onPress={handleCreateTeam}>
-                <Text style={styles.createButtonText}>Create Project</Text>
-            </TouchableOpacity>
-
-            {showToast && (
-                <View style={styles.toastCenter}>
-                    <Text style={styles.toastText}>New Project: {projectName} created!</Text>
-                </View>
-            )}
-
-            <BottomBar />
-        </SafeAreaView>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <TopBar />
+        <Text style={[styles.title, { color: theme.text }]}>Create new Project</Text>
+  
+        <View style={styles.inputRow}>
+          <TextInput
+            placeholder="Project name"
+            placeholderTextColor={theme.text}
+            style={[
+              styles.input,
+              { color: theme.text, borderColor: theme.primary },
+              errors.name && styles.inputError
+            ]}
+            value={projectName}
+            onChangeText={(text) => {
+              setprojectName(text);
+              if (errors.name && text.trim()) {
+                setErrors((prev) => ({ ...prev, name: false }));
+              }
+            }}
+          />
+          {errors.name && <Text style={[styles.errorIcon, { color: theme.text }]}>❌</Text>}
+        </View>
+  
+        <View style={styles.inputRow}>
+          <TextInput
+            placeholder="Deadline (YYYY-MM-DD)"
+            placeholderTextColor={theme.text}
+            style={[
+              styles.input,
+              { color: theme.text, borderColor: theme.primary },
+              errors.description && styles.inputError
+            ]}
+            value={deadline}
+            onChangeText={(text) => {
+              setdeadline(text);
+              if (errors.description && text.trim()) {
+                setErrors((prev) => ({ ...prev, description: false }));
+              }
+            }}
+          />
+          {errors.description && <Text style={[styles.errorIcon, { color: theme.text }]}>❌</Text>}
+        </View>
+  
+        <TouchableOpacity style={[styles.createButton, { backgroundColor: theme.primary }]} onPress={handleCreateTeam}>
+          <Text style={[styles.createButtonText, { color: theme.text }]}>Create Project</Text>
+        </TouchableOpacity>
+  
+        {showToast && (
+          <View style={[styles.toastCenter, { backgroundColor: theme.card }]}>
+            <Text style={[styles.toastText, { color: theme.text }]}>New Project: {projectName} created!</Text>
+          </View>
+        )}
+  
+        <BottomBar />
+      </SafeAreaView>
     );
 }
 
@@ -132,7 +144,6 @@ const styles = StyleSheet.create({
         padding: 15,
         flex: 1,
         alignItems: 'center',
-        backgroundColor: '#fff',
     },
     backButton: {
         alignSelf: 'flex-end',
@@ -148,7 +159,6 @@ const styles = StyleSheet.create({
     },
     input: {
         borderWidth: 1,
-        borderColor: '#ccc',
         borderRadius: 4,
         width: '90%',
         padding: 10,
@@ -173,7 +183,6 @@ const styles = StyleSheet.create({
         textAlignVertical: 'top',
     },
     createButton: {
-        backgroundColor: '#70ABAF',
         padding: 15,
         borderRadius: 8,
         width: '100%',
@@ -189,7 +198,6 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: '45%',
         alignSelf: 'center',
-        backgroundColor: '#ddd',
         paddingVertical: 15,
         paddingHorizontal: 25,
         borderRadius: 12,
@@ -232,7 +240,6 @@ const styles = StyleSheet.create({
     },
     
     addButton: {
-        backgroundColor: '#e0e0e0',
         padding: 10,
         borderRadius: 8,
         marginLeft: 10,

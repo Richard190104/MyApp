@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { ipAddr } from "@/components/backendip";
 import { storeTeamMembers } from "@/components/getUser";
+import { useTheme } from '@/components/ThemeContext';
 
 const TeamScreen = () => {
     const params = useLocalSearchParams();
@@ -17,6 +18,8 @@ const TeamScreen = () => {
     const [showInput, setShowInput] = useState(false)
     const [newMemberEmail,setNewMemberEmail] = useState("");
     const [showRoleOptions, setShowRoleOptions] = useState<{ [key: number]: boolean }>({});
+    const { theme, toggleTheme } = useTheme();
+    
     useEffect(() => {
         const fetchUserAndTeams = async () => {
             const token = await AsyncStorage.getItem('authToken');
@@ -182,164 +185,166 @@ const TeamScreen = () => {
     }
 
   return (
-<SafeAreaView style={styles.MainContainer}>
-    <TopBar />
-    <Text style={styles.mainText}>{params.team_name}</Text>
-    <View style={styles.headerRow}>
-        <Text style={styles.SmolText}>Team projects</Text>
-        <TouchableOpacity
-            onPress={() => router.push({ pathname: '/inApp/createProjectScreen', params: { team_id: params.team_id.toString(), team_name: params.team_name, team_creator_id: params.team_creator_id, user: user?.toString() } })}
-            style={styles.addButton}
-        >
-            <Ionicons name="add" size={24} color="white" />
-        </TouchableOpacity>
-    </View>
-    
-    <ScrollView style={{ width: '100%' }} contentContainerStyle={{ alignItems: 'center', paddingBottom: 50 }}>
-  
-    
-        <View style={styles.teamList}>
-            {projects.length > 0 ? (
-                projects.map(project => (
-                    <TouchableOpacity
-                        key={project.id}
-                        style={styles.teamButton}
-                        onPress={() => router.push({ pathname: '/inApp/projectscreen', params: { project_id: project.id.toString(), project_name: project.project_name, team_id: params.team_id, user_id: user, project_deadline: project.deadline.toString(), team_name: params.team_name } })}
-                    >
-                        <Text style={styles.teamButtonText}>{project.project_name}</Text>
-                    </TouchableOpacity>
-                ))
-            ) : (
-                <Text style={styles.noTeamsText}>This team does not have any projects</Text>
-            )}
-        </View>
+<SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
+  <TopBar />
+  <Text style={[styles.mainText, { color: theme.text }]}>{params.team_name}</Text>
 
-        <View style={styles.teamList}>
-            <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text style={styles.SmolText}>Team Members</Text>
-                <View style={{ flexDirection: 'row', gap: 15 }}>
-                    <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/chatScreen', params: { team_id: params.team_id, user_id: user } })}>
-                        <MaterialCommunityIcons name="message-text-outline" size={25} color="gray" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setShowInput(!showInput)}>
-                        <MaterialCommunityIcons name={showInput ? "minus" : "plus"} size={25} color="gray" />
-                    </TouchableOpacity>
-                </View>
+  <View style={styles.headerRow}>
+    <Text style={[styles.SmolText, { color: theme.text }]}>Team projects</Text>
+    <TouchableOpacity
+      onPress={() => router.push({ pathname: '/inApp/createProjectScreen', params: { team_id: params.team_id.toString(), team_name: params.team_name, team_creator_id: params.team_creator_id, user: user?.toString() } })}
+      style={[styles.addButton, { backgroundColor: theme.primary }]}
+    >
+      <Ionicons name="add" size={24} color="white" />
+    </TouchableOpacity>
+  </View>
+
+  <ScrollView style={{ width: '100%' }} contentContainerStyle={{ alignItems: 'center', paddingBottom: 50 }}>
+    <View style={styles.teamList}>
+      {projects.length > 0 ? (
+        projects.map(project => (
+          <TouchableOpacity
+            key={project.id}
+            style={[styles.teamButton, { backgroundColor: theme.card }]}
+            onPress={() => router.push({ pathname: '/inApp/projectscreen', params: { project_id: project.id.toString(), project_name: project.project_name, team_id: params.team_id, user_id: user, project_deadline: project.deadline.toString(), team_name: params.team_name } })}
+          >
+            <Text style={[styles.teamButtonText, { color: theme.text }]}>{project.project_name}</Text>
+          </TouchableOpacity>
+        ))
+      ) : (
+        <Text style={[styles.noTeamsText, { color: theme.text }]}>This team does not have any projects</Text>
+      )}
+    </View>
+
+    <View style={styles.teamList}>
+      <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={[styles.SmolText, { color: theme.text }]}>Team Members</Text>
+        <View style={{ flexDirection: 'row', gap: 15 }}>
+          <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/chatScreen', params: { team_id: params.team_id, user_id: user } })}>
+            <MaterialCommunityIcons name="message-text-outline" size={25} color={theme.text} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowInput(!showInput)}>
+            <MaterialCommunityIcons name={showInput ? "minus" : "plus"} size={25} color={theme.text} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {showInput && (
+        <View style={{ marginVertical: 10, width: '100%' }}>
+          <Text style={[{ fontSize: 16, marginBottom: 5 }, { color: theme.text }]}>Add a new member:</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TextInput
+              style={{
+                flex: 1,
+                borderWidth: 1,
+                borderColor: theme.primary,
+                borderRadius: 5,
+                padding: 10,
+                marginRight: 10,
+                color: theme.text,
+              }}
+              placeholder="Enter email"
+              placeholderTextColor={theme.text}
+              onChangeText={setNewMemberEmail}
+            />
+            <TouchableOpacity
+              style={{
+                backgroundColor: theme.primary,
+                padding: 10,
+                borderRadius: 5,
+              }}
+              onPress={() => {
+                if (newMemberEmail.trim() !== '') {
+                  SendInvite(newMemberEmail);
+                  setNewMemberEmail('');
+                }
+              }}
+            >
+              <Text style={{ color: theme.background, fontWeight: 'bold' }}>Add</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {teamMembers.length > 0 ? (
+        teamMembers.map((member, index) => (
+          <View key={`${member.user_id}-${index}`} style={[styles.memberBlock, { backgroundColor: theme.card }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ marginRight: 10 }}>
+                {member.profile_picture ? (
+                  <Image
+                    source={{ uri: `data:image/jpeg;base64,${member.profile_picture}` }}
+                    style={{ width: 40, height: 40, borderRadius: 20 }}
+                  />
+                ) : (
+                  <Ionicons name="person-circle-outline" size={40} color={theme.text} />
+                )}
+              </View>
+              <View>
+                <Text style={[styles.member, { color: theme.text }]}>{member.username}</Text>
+                <Text style={[
+                  styles.memberRole,
+                  { color: theme.text },
+                  member.role === 'owner' ? { fontWeight: 'bold', color: theme.primary } : {}
+                ]}>
+                  {member.role}
+                </Text>
+              </View>
             </View>
 
-            {showInput && (
-                <View style={{ marginVertical: 10, width: '100%' }}>
-                    <Text style={{ fontSize: 16, marginBottom: 5 }}>Add a new member:</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <TextInput
-                            style={{
-                                flex: 1,
-                                borderWidth: 1,
-                                borderColor: '#ccc',
-                                borderRadius: 5,
-                                padding: 10,
-                                marginRight: 10,
-                                color: 'black'
-                            }}
-                            placeholder="Enter email"
-                            onChangeText={setNewMemberEmail}
-                        />
-                        <TouchableOpacity
-                            style={{
-                                backgroundColor: '#70ABAF',
-                                padding: 10,
-                                borderRadius: 5,
-                            }}
-                            onPress={() => {
-                                if (newMemberEmail.trim() !== '') {
-                                    SendInvite(newMemberEmail);
-                                    setNewMemberEmail('');
-                                }
-                            }}
-                        >
-                            <Text style={{ color: 'white', fontWeight: 'bold' }}>Add</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            )}
-            {teamMembers.length > 0 ? (
-                teamMembers.map((member, index) => (
-                    <View key={`${member.user_id}-${index}`} style={styles.memberBlock}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <View style={{ marginRight: 10 }}>
-                                {member.profile_picture ? (
-                                    <Image
-                                        source={{  uri: `data:image/jpeg;base64,${member.profile_picture}`  }}
-                                        style={{ width: 40, height: 40, borderRadius: 20 }}
-                                    />
-                                ) : (
-                                    <Ionicons name="person-circle-outline" size={40} color="black" />
-                                )}
-                            </View>
-                            <View>
-                                <Text style={styles.member}>{member.username}</Text>
-                                <Text
-                                    style={[
-                                        styles.memberRole,
-                                        member.role === 'owner' ? { fontWeight: 'bold', color: 'black' } : {}
-                                    ]}>{member.role}</Text>
-                            </View>
-                        </View>
-                        {member.role !== 'owner' && user !== undefined && user !== null && projectAdmins.includes(user) && (
-                            <View style={{ flexDirection: 'row', gap: 15 }}>
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        setShowRoleOptions(prevState => ({
-                                            ...prevState,
-                                            [member.user_id]: !prevState[member.user_id],
-                                        }));
-                                    }}
-                                >
-                                    <MaterialCommunityIcons name="pencil" size={25} color="black" />
-                                </TouchableOpacity>
-                                {showRoleOptions[member.user_id] && (
-                                      <Modal
-                                      transparent
-                                      visible={showRoleOptions[member.user_id]}
-                                      animationType="slide"
-                                    onRequestClose={() => setShowRoleOptions(prevState => ({ ...prevState, [member.user_id]: false }))}
-                                    >
-                                      <View style={styles.modalOverlay}>
-                                        <View style={styles.modalContainer}>
-                                          <Text style={styles.modalTitle}>Zmeniť rolu pre {member.username}</Text>
-                                          {['member', 'admin'].map(option => (
-                                            <TouchableOpacity
-                                              key={option}
-                                              onPress={async () => {
-                                                await modifyUserRole(member.user_id, option);
-                                                setShowRoleOptions(prevState => ({ ...prevState, [member.user_id]: false }));
-                                              }}
-                                              style={styles.optionButton}
-                                            >
-                                              <Text style={styles.optionText}>{option}</Text>
-                                            </TouchableOpacity>
-                                          ))}
-                                        <TouchableOpacity onPress={() => setShowRoleOptions({})}>
-                                            <Text style={styles.cancelText}>Zrušiť</Text>
-                                          </TouchableOpacity>
-                                        </View>
-                                      </View>
-                                    </Modal>
-                                )}
-                                <TouchableOpacity onPress={() => removeTeamMember(member.user_id)}>
-                                    <MaterialCommunityIcons name="close" size={25} color="red" />
-                                </TouchableOpacity>
-                            </View>
-                        )}
-                    </View>
-                ))
-            ) : (
-                <Text style={styles.noTeamsText}>This team does not have any members</Text>
-            )}
-        </View>
-    </ScrollView>
-    <BottomBar />
+            {member.role !== 'owner' && user !== undefined && user !== null && projectAdmins.includes(user) && (
+              <View style={{ flexDirection: 'row', gap: 15, height: '100%', alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => {
+                  setShowRoleOptions(prev => ({ ...prev, [member.user_id]: !prev[member.user_id] }));
+                }}>
+                  <MaterialCommunityIcons name="pencil" size={25} color={theme.text} />
+                </TouchableOpacity>
 
+                {showRoleOptions[member.user_id] && (
+                  <Modal
+                    transparent
+                    visible={showRoleOptions[member.user_id]}
+                    animationType="slide"
+                    onRequestClose={() => setShowRoleOptions(prev => ({ ...prev, [member.user_id]: false }))}
+                  >
+                    <View style={[styles.modalOverlay, {gap: 15}]}>
+                      <View style={[styles.modalContainer, { backgroundColor: theme.card }]}>
+                        <Text style={[styles.modalTitle, { color: theme.text }]}>
+                          Zmeniť rolu pre {member.username}
+                        </Text>
+                        {['member', 'admin'].map(option => (
+                          <TouchableOpacity
+                            key={option}
+                            onPress={async () => {
+                              await modifyUserRole(member.user_id, option);
+                              setShowRoleOptions(prev => ({ ...prev, [member.user_id]: false }));
+                            }}
+                            style={[styles.optionButton, { backgroundColor: theme.primary, marginVertical: 5, borderRadius: 5, height: 45, justifyContent: 'center', alignItems: 'center' }]}
+                          >
+                            <Text style={[styles.optionText, { color: theme.background }]}>{option}</Text>
+                          </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity onPress={() => setShowRoleOptions({})}>
+                          <Text style={[styles.cancelText, { color: theme.danger }]}>Zrušiť</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </Modal>
+                )}
+
+                <TouchableOpacity onPress={() => removeTeamMember(member.user_id)}>
+                  <MaterialCommunityIcons name="close" size={25} color="red" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        ))
+      ) : (
+        <Text style={[styles.noTeamsText, { color: theme.text }]}>This team does not have any members</Text>
+      )}
+    </View>
+  </ScrollView>
+  <BottomBar />
 </SafeAreaView>
   );
 };
@@ -351,7 +356,6 @@ const styles = StyleSheet.create({
         flex: 1,
         width: "100%",
         alignItems: "center",
-        backgroundColor: "#f9f9f9",
     },
     SmolText: {
         fontSize: 18,
@@ -368,7 +372,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     addButton: {
-        backgroundColor: "#70ABAF",
         padding: 10,
         borderRadius: 10,
         shadowColor: "#000",
@@ -385,7 +388,6 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     teamButton: {
-        backgroundColor: '#e0e0e0',
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 10,
@@ -435,12 +437,11 @@ const styles = StyleSheet.create({
     },
     modalOverlay: {
         flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.4)',
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
       },
       modalContainer: {
-        backgroundColor: 'white',
         borderRadius: 10,
         padding: 20,
         width: '80%',

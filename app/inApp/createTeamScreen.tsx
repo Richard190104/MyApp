@@ -8,12 +8,15 @@ import TopBar from '@/components/topBar';
 import { useRouter } from 'expo-router';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
+import { useTheme } from '@/components/ThemeContext';
 
 export default function CreateTeamScreen() {
     const router = useRouter();
     const [teamName, setTeamName] = useState('');
     const [teamDescription, setTeamDescription] = useState('');
     const [showToast, setShowToast] = useState(false);
+    const { theme, toggleTheme } = useTheme();
+    
     const [errors, setErrors] = useState<{ name: boolean; description: boolean }>({
         name: false,
         description: false,
@@ -76,84 +79,95 @@ export default function CreateTeamScreen() {
     
 
     return (
-        <SafeAreaView style={styles.container}>
-            <TopBar />
-            <Text style={styles.title}>Create new Team</Text>
+<SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <TopBar />
+    <Text style={[styles.title, { color: theme.text }]}>Create new Team</Text>
 
-            <View style={styles.inputRow}>
-                <TextInput
-                    placeholder="Team name"
-                    style={[styles.input, errors.name && styles.inputError]}
-                    value={teamName}
-                    onChangeText={(text) => {
-                        setTeamName(text);
-                        if (errors.name && text.trim()) {
-                            setErrors((prev) => ({ ...prev, name: false }));
-                        }
-                    }}
-                />
-                {errors.name && <Text style={styles.errorIcon}>❌</Text>}
-            </View>
+    <View style={styles.inputRow}>
+        <TextInput
+        placeholder="Team name"
+        placeholderTextColor={theme.text}
+        style={[
+            styles.input,
+            { color: theme.text, borderColor: theme.text },
+            errors.name && styles.inputError
+        ]}
+        value={teamName}
+        onChangeText={(text) => {
+            setTeamName(text);
+            if (errors.name && text.trim()) {
+            setErrors((prev) => ({ ...prev, name: false }));
+            }
+        }}
+        />
+        {errors.name && <Text style={[styles.errorIcon, { color: 'red' }]}>❌</Text>}
+    </View>
 
-            <View style={styles.inputRow}>
-                <TextInput
-                    placeholder="Team description"
-                    style={[styles.input, styles.textarea, errors.description && styles.inputError]}
-                    multiline={true}
-                    numberOfLines={4}
-                    value={teamDescription}
-                    onChangeText={(text) => {
-                        setTeamDescription(text);
-                        if (errors.description && text.trim()) {
-                            setErrors((prev) => ({ ...prev, description: false }));
-                        }
-                    }}
-                />
-                {errors.description && <Text style={styles.errorIcon}>❌</Text>}
-            </View>
+    <View style={styles.inputRow}>
+        <TextInput
+        placeholder="Team description"
+        placeholderTextColor={theme.text}
+        style={[
+            styles.input,
+            styles.textarea,
+            { color: theme.text, borderColor: theme.text },
+            errors.description && styles.inputError
+        ]}
+        multiline={true}
+        numberOfLines={4}
+        value={teamDescription}
+        onChangeText={(text) => {
+            setTeamDescription(text);
+            if (errors.description && text.trim()) {
+            setErrors((prev) => ({ ...prev, description: false }));
+            }
+        }}
+        />
+        {errors.description && <Text style={[styles.errorIcon, { color: 'red' }]}>❌</Text>}
+    </View>
 
-            <Text style={styles.subTitle}>Add members</Text>
+    <Text style={[styles.subTitle, { color: theme.text }]}>Add members</Text>
 
-            <View style={styles.memberInputRow}>
-                <Ionicons name="person-circle-outline" size={24} color="black" />
-                <TextInput
-                    placeholder="enter email"
-                    style={styles.memberInput}
-                    value={memberEmail}
-                    onChangeText={setMemberEmail}
-                />
-                <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={() => {
-                        if (memberEmail.trim() !== '') {
-                            setMembers([...members, memberEmail.trim()]);
-                            setMemberEmail('');
-                        }
-                    }}
-                >
-                    <Text style={{color: 'white', fontWeight: 'bold'}}>Add</Text>
-                </TouchableOpacity>
-            </View>
+    <View style={styles.memberInputRow}>
+        <Ionicons name="person-circle-outline" size={24} color={theme.text} />
+        <TextInput
+        placeholder="enter email"
+        placeholderTextColor={theme.text}
+        style={[styles.memberInput, { color: theme.text, borderColor: theme.text }]}
+        value={memberEmail}
+        onChangeText={setMemberEmail}
+        />
+        <TouchableOpacity
+        style={[styles.addButton, { backgroundColor: theme.primary }]}
+        onPress={() => {
+            if (memberEmail.trim() !== '') {
+            setMembers([...members, memberEmail.trim()]);
+            setMemberEmail('');
+            }
+        }}
+        >
+        <Text style={{ color: 'white', fontWeight: 'bold' }}>Add</Text>
+        </TouchableOpacity>
+    </View>
 
-            <View style={styles.membersList}>
-                {members.map((email, index) => (
-                    <Text key={index} style={styles.memberItem}>• {email}</Text>
-                ))}
-            </View>
+    <View style={styles.membersList}>
+        {members.map((email, index) => (
+        <Text key={index} style={[styles.memberItem, { color: theme.text }]}>• {email}</Text>
+        ))}
+    </View>
 
+    <TouchableOpacity style={[styles.createButton, { backgroundColor: theme.primary }]} onPress={handleCreateTeam}>
+        <Text style={styles.createButtonText}>Create Team</Text>
+    </TouchableOpacity>
 
-            <TouchableOpacity style={styles.createButton} onPress={handleCreateTeam}>
-                <Text style={styles.createButtonText}>Create Team</Text>
-            </TouchableOpacity>
+    {showToast && (
+        <View style={styles.toastCenter}>
+        <Text style={styles.toastText}>New team: {teamName} created!</Text>
+        </View>
+    )}
 
-            {showToast && (
-                <View style={styles.toastCenter}>
-                    <Text style={styles.toastText}>New team: {teamName} created!</Text>
-                </View>
-            )}
-
-            <BottomBar />
-        </SafeAreaView>
+    <BottomBar />
+    </SafeAreaView>
     );
 }
 
