@@ -6,6 +6,7 @@ type ButtonStyle = {
     title: string;
     onPress: () => void;
     styling?: number;
+    disabled?: boolean;
 }
 
 
