@@ -254,9 +254,15 @@ const TaskScreen = () => {
       <Text style={[styles.subHeader, { color: theme.text }]}>Description</Text>
     </View>
     <Text style={[styles.description, { color: theme.text }]}>{params.task_description}</Text>
-
+    <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start' }}>  
     <Text style={[styles.subHeader, { color: theme.text }]}>Subtasks</Text>
-
+    <TouchableOpacity
+      onPress={() => router.push({ pathname: '/inApp/createTaskScreen', params: { project_id: params.project_id, team_id: params.team_id, parent_id: taskId} })}
+      style={[styles.addButton, { backgroundColor: theme.primary }]}
+    >
+        <Ionicons name="add" size={15} color="white" />
+    </TouchableOpacity>
+    </View>
     <FlatList
       data={tasks.filter(task => task.parent_task_id === taskId)}
       keyExtractor={item => item.id.toString()}
@@ -404,6 +410,15 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
   },
+  addButton: {
+    padding: 10,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+},
 });
 
 export default TaskScreen;

@@ -71,7 +71,7 @@ export default function CreateProjectScreen() {
         }
       
         try {
-          const response = await fetch(`http://${ipAddr}:5000/createTask`, {
+            const response = await fetch(`http://${ipAddr}:5000/createTask`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -83,9 +83,9 @@ export default function CreateProjectScreen() {
               description: description,
               assign: assignedToId,
               project_id: params.project_id,
-              parent_task_id: null,
+              parent_task_id: params.parent_id || null,
             }),
-          });
+            });
       
           const data = await response.json();
       
