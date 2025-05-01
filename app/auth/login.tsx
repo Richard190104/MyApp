@@ -7,6 +7,7 @@ import {
   Alert,
   Modal,
   TouchableOpacity,
+  Button,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import ButtonMain from '@/components/button';
@@ -166,9 +167,7 @@ export default function LoginScreen() {
         styling={1}
         disabled={isLoading}
       />
-      <TouchableOpacity onPress={() => router.replace('/auth/register')}>
-        <Text style={{ color: theme.primary, marginTop: 10 }}>Register</Text>
-      </TouchableOpacity>
+     <Button title="Register" onPress={() => router.replace("/auth/register") } />
 
       <TouchableOpacity onPress={() => setForgotVisible(true)}>
         <Text style={{ color: 'blue', marginTop: 10 }}>Forgot password?</Text>

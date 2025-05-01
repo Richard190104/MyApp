@@ -6,9 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import BottomBar from '@/components/bottomBar';
@@ -16,7 +16,7 @@ import TopBar from '@/components/topBar';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
-import LoadingOverlay from '../../components/LoadingOverlay';
+
 export default function CreateProjectScreen() {
   const params = useLocalSearchParams<{
     team_id: string;
@@ -69,24 +69,34 @@ export default function CreateProjectScreen() {
         }
       );
       const data = await response.json();
-      setIsLoading(false);
 
       if (response.ok) {
-        router.replace({
-          pathname: './team',
-          params: {
-            team_id: params.team_id,
-            team_name: params.team_name,
-            team_creator_id: params.team_creator_id,
-            user: userID.toString(),
-          },
-        });
+        setTimeout(() => {
+          router.replace({
+            pathname: './team',
+            params: {
+              team_id: params.team_id,
+              team_name: params.team_name,
+              team_creator_id: params.team_creator_id,
+              user: userID.toString(),
+            },
+          });
+          setIsLoading(false);
+
+        },3000);
+        
       } else if (response.status === 403) {
         Alert.alert('Error', 'You don’t have permission for that.');
+        setIsLoading(false);
+
       } else if (response.status === 401) {
         Alert.alert('Error', 'We couldn’t authenticate you.');
+        setIsLoading(false);
+
       } else {
         Alert.alert('Error', data.message || 'Failed to create project.');
+        setIsLoading(false);
+
       }
     } catch (error) {
       setIsLoading(false);
@@ -94,6 +104,15 @@ export default function CreateProjectScreen() {
       console.error(error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.primary }]}>
+        <ActivityIndicator size="large" color={theme.text} />
+        <Text style={[styles.loadingText, { color: theme.text }]}>Creating Project...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -147,9 +166,6 @@ export default function CreateProjectScreen() {
         </Text>
       </TouchableOpacity>
 
-
-      <LoadingOverlay visible={isLoading} />
-
       <BottomBar />
     </SafeAreaView>
   );
@@ -187,14 +203,14 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   createButtonText: { fontSize: 16, fontWeight: 'bold' },
-  toastCenter: {
-    position: 'absolute',
-    top: '45%',
-    alignSelf: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 25,
-    borderRadius: 12,
-    elevation: 5,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  toastText: { fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 });

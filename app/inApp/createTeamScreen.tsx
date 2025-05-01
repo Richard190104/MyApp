@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +17,6 @@ import { useRouter } from 'expo-router';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
-import LoadingOverlay from '../../components/LoadingOverlay';
 
 export default function CreateTeamScreen() {
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function CreateTeamScreen() {
     }
 
     try {
-      setIsLoading(true); 
+      setIsLoading(true);
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
         setIsLoading(false);
@@ -64,12 +64,19 @@ export default function CreateTeamScreen() {
         }),
       });
       const data = await response.json();
-      setIsLoading(false);
+      
 
       if (response.ok) {
-        router.replace('/inApp/homeScreen');
+        setTimeout(() => {
+          router.replace('/inApp/homeScreen');
+          setIsLoading(false);
+
+        }, 2000);
+       
       } else {
         Alert.alert('Error', data.message || 'Failed to create team.');
+        setIsLoading(false);
+
       }
     } catch (error) {
       setIsLoading(false);
@@ -77,6 +84,15 @@ export default function CreateTeamScreen() {
       console.error(error);
     }
   };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: theme.primary }]}>
+        <ActivityIndicator size="large" color="#fff" />
+        <Text style={styles.loadingText}>Creating Team...</Text>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -162,8 +178,6 @@ export default function CreateTeamScreen() {
         <Text style={styles.createButtonText}>Create Team</Text>
       </TouchableOpacity>
 
-      <LoadingOverlay visible={isLoading} />
-
       <BottomBar />
     </SafeAreaView>
   );
@@ -186,10 +200,6 @@ const styles = StyleSheet.create({
   memberItem: { fontSize: 16, marginBottom: 4 },
   createButton: { padding: 15, borderRadius: 8, width: '100%', alignItems: 'center', marginTop: 20 },
   createButtonText: { fontSize: 16, fontWeight: 'bold', color: 'white' },
-  toastCenter: {
-    position: 'absolute', top: '45%', alignSelf: 'center',
-    backgroundColor: '#ddd', paddingVertical: 15, paddingHorizontal: 25,
-    borderRadius: 12, elevation: 5,
-  },
-  toastText: { color: '#000', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 10, fontSize: 18, color: '#fff', fontWeight: 'bold' },
 });
