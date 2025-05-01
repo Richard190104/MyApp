@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ipAddr } from "@/components/backendip";
+//import messaging from '@react-native-firebase/messaging';
 
 export const storeUserId = async (userId: number, token: string) => {
   try {
@@ -63,6 +64,7 @@ export const getUserId = async () => {
 export const logout = async () => {
   try {
     const authToken = await AsyncStorage.getItem('authToken');
+    //const fcmToken = await messaging().getToken();
 
     if (authToken) {
       await fetch(`http://${ipAddr}:5000/device_token`, {

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import BottomBar from '@/components/bottomBar';
 import TopBar from '@/components/topBar';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
