@@ -8,23 +8,36 @@
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
       "supportsTablet": true
+
     },
+
     "android": {
+      "package": "com.janporubsky.MyApp",
+
+
+      "googleServicesFile": "./google-services.json",
+
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      },
-      "package": "com.janporubsky.MyApp"
+      }
     },
+
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
       "expo-router",
+
+      //"react-native-firebase/app",
+      //"react-native-firebase/messaging",
+
       [
         "expo-splash-screen",
         {
@@ -33,15 +46,23 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
       ]
     ],
+
     "experiments": {
       "typedRoutes": true
     },
+
     "extra": {
-      "router": {
-        "origin": false
-      },
+      "router": { "origin": false },
       "eas": {
         "projectId": "7383d965-7c29-46f0-bd61-719ebf704884"
       }

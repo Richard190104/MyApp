@@ -15,6 +15,7 @@ import { getUserId, storeUser, storeUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
 import LoadingOverlay from '../../components/LoadingOverlay';
+import messaging from '@react-native-firebase/messaging';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -73,10 +74,10 @@ export default function LoginScreen() {
         await storeUserId(data.userID, data.token);
         await storeUser(userInfo);
 
-        /*const fcmToken = await messaging().getToken();
+        const fcmToken = await messaging().getToken();
         if (fcmToken) {
           await registerDeviceToken(fcmToken, data.token);
-        }*/
+        }
 
         router.replace('/inApp/homeScreen');
       } else {
