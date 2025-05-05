@@ -18,7 +18,7 @@ const TeamScreen = (props: any) => {
     const usero = props?.usero || localParams?.user;
 
     const [projects, setProjects] = useState<{ id: number; team_id: number; project_name: string; deadline: Date }[]>([]);
-    const [user, setUser] = useState<number|null>();
+    const [user, setUser] = useState<number | null>(null);
     const [teamMembers,setTeamMembers] = useState<{user_id:number; username:string; email:string; role:string; profile_picture?: string}[]>([]);
     const [projectAdmins, setProjectAdmins] = useState<number[]>([])
     const [showInput, setShowInput] = useState(false)
@@ -30,12 +30,13 @@ const TeamScreen = (props: any) => {
         const fetchUserAndTeams = async () => {
             const token = await AsyncStorage.getItem('authToken');
             console.log(team_id)
-
-            if (typeof usero === "string") {
-            setUser(parseInt(usero, 10));
+            const storedUserId = await AsyncStorage.getItem('userId');
+            if (storedUserId) {
+              setUser(parseInt(storedUserId, 10));
             } else {
-            console.warn("Invalid user parameter:", usero);
+              console.warn('User ID not found in AsyncStorage');
             }
+            
             if (user !== null) {
             try {
                 const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${team_id}`, {

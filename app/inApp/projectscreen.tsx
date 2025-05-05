@@ -143,6 +143,7 @@ const TeamScreen = () => {
                 progress={progress}
                 userId={Number(params.user_id)}
                 onModifyTaskStatus={modifyTaskStatus}
+                projectID={params.project_id?.toString() || ''}
             />
         );
     }

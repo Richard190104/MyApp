@@ -3,6 +3,9 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useTheme } from '@/components/ThemeContext';
 import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import TopBar from '@/components/topBar';
+import BottomBar from '@/components/bottomBar';
 
 const TabletProjectTasks = ({
   teamName,
@@ -11,6 +14,7 @@ const TabletProjectTasks = ({
   progress,
   userId,
   onModifyTaskStatus,
+  projectID,
 }: {
   teamName: string;
   projectName: string;
@@ -18,9 +22,10 @@ const TabletProjectTasks = ({
   progress: number;
   userId: number;
   onModifyTaskStatus: (task: any) => void;
+  projectID: string;
 }) => {
+    
   const { theme } = useTheme();
-
   const TaskItem = ({ task }: { task: any }) => {
     return (
       <TouchableOpacity
@@ -29,8 +34,9 @@ const TabletProjectTasks = ({
             pathname: '/inApp/taskScreen',
             params: {
               team_name: teamName,
-              project_id: task.project_id?.toString(),
+              project_id: projectID,
               team_id: task.team_id?.toString(),
+              user_id: userId.toString(),
               task_id: task.id.toString(),
               task_name: task.name,
               task_description: task.description,
@@ -38,7 +44,8 @@ const TabletProjectTasks = ({
               task_deadline: task.deadline ? task.deadline.toString() : '',
               task_completed: task.completed.toString(),
             },
-          }) }
+          })
+          }
       >
         <TouchableOpacity
           style={[styles.checkbox, { borderColor: theme.text }, task.completed && { backgroundColor: theme.primary }]}
@@ -55,7 +62,9 @@ const TabletProjectTasks = ({
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+    <TopBar/>
+    <View style={[styles.container, { backgroundColor: theme.background, marginBottom: 80 }]}>
       <View style={styles.columnLeft}>
         <Text style={[styles.title, { color: theme.text }]}>{teamName}</Text>
         <Text style={[styles.subtitle, { color: theme.text }]}>{projectName}</Text>
@@ -85,6 +94,8 @@ const TabletProjectTasks = ({
         />
       </View>
     </View>
+    <BottomBar/>
+    </SafeAreaView>
   );
 };
 

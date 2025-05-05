@@ -23,7 +23,7 @@ const TaskScreen = () => {
   const [showRoleOptions, setShowRoleOptions] = useState<{ [key: string]: boolean }>({});
   const [members, setMembers] = useState<{ user_id: number; username: string; role: string }[]>([]);
   const { theme, toggleTheme } = useTheme();
-  
+  console.log(params)
   const speak = () => {
     const text = `Hello, you are on the task screen. The task name is ${params.task_name} and it is assigned to ${assignedMember}.`;
     Speech.speak(text, { language: 'en-US', pitch: 1.0, rate: 1.0 });
