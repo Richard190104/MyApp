@@ -9,7 +9,9 @@ import TopBar from '@/components/topBar';
 import { Ionicons } from '@expo/vector-icons';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext'; 
-
+import { Dimensions } from 'react-native';
+import TabletHomeScreen from '../tabletViews/TabletHomeScreen';
+const isTablet = Dimensions.get('window').width >= 768;
 export default function HomeScreen() {
     const router = useRouter();
     const { theme, toggleTheme } = useTheme(); 
@@ -42,6 +44,10 @@ export default function HomeScreen() {
         fetchUserAndTeams();
     }, []);
 
+    if (isTablet) {
+        return <TabletHomeScreen />;
+    }
+
     return (
         <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
             <TopBar />
@@ -65,7 +71,7 @@ export default function HomeScreen() {
                     <TouchableOpacity
                         key={team.id}
                         style={[styles.teamButton, { backgroundColor: theme.card }]} 
-                        onPress={() => router.push({ pathname: './team', params: { team_id: team.id.toString(), team_name: team.name, team_creator_id: team.creator_id, user: user?.toString() } })}
+                        onPress={() => router.push({ pathname: './team', params: { team_id: team.id.toString(), team_name: team.name, team_creator_id: team.creator_id, usero: user?.toString() } })}
                     >
                         <Text style={[styles.teamButtonText, { color: theme.text }]}>
                         {team.name}

@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ipAddr } from "@/components/backendip";
-import messaging from '@react-native-firebase/messaging';
+// import messaging from '@react-native-firebase/messaging';
 
 export const storeUserId = async (userId: number, token: string) => {
   try {
@@ -64,8 +64,9 @@ export const getUserId = async () => {
 export const logout = async () => {
   try {
     const authToken = await AsyncStorage.getItem('authToken');
-    const fcmToken = await messaging().getToken();
-
+    // const fcmToken = await messaging().getToken();
+    const fcmToken = "ss";
+    console.log('FCM token:', fcmToken);
     if (authToken) {
       await fetch(`http://${ipAddr}:5000/device_token`, {
         method: 'PUT',
@@ -73,7 +74,7 @@ export const logout = async () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ is_active: false }),
+        body: JSON.stringify({ is_active: false, token: fcmToken }),
       });
       console.log('FCM token deactivated successfully');
     }

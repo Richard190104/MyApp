@@ -16,8 +16,10 @@ import TopBar from '@/components/topBar';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
-
+import { Dimensions } from 'react-native';
+import TabletCreateProjectScreen from '../tabletViews/TabletCreateProject';
 export default function CreateProjectScreen() {
+  const isTablet = Dimensions.get('window').width >= 768;
   const params = useLocalSearchParams<{
     team_id: string;
     team_name: string;
@@ -72,6 +74,12 @@ export default function CreateProjectScreen() {
 
       if (response.ok) {
         setTimeout(() => {
+            if (isTablet) {
+            router.replace({
+              pathname: './homeScreen',
+            });
+            return;
+            }
           router.replace({
             pathname: './team',
             params: {
@@ -113,7 +121,19 @@ export default function CreateProjectScreen() {
       </View>
     );
   }
-
+  if (isTablet) {
+    return (
+      <TabletCreateProjectScreen
+        projectName={projectName}
+        setProjectName={setProjectName}
+        deadline={deadline}
+        setDeadline={setDeadline}
+        errors={errors}
+        handleCreateProject={handleCreateProject}
+        isLoading={isLoading}
+      />
+    );
+  }
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <TopBar />

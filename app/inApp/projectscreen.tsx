@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, TextInput, FlatList } from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, FlatList, Dimensions } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomBar from "@/components/bottomBar";
@@ -9,236 +9,202 @@ import { ipAddr } from "@/components/backendip";
 import { useFocusEffect } from '@react-navigation/native';
 import React from "react";
 import { useTheme } from '@/components/ThemeContext';
-
+import TabletProjectScreen from "../tabletViews/TabletProjectScreen";
 
 const TeamScreen = () => {
     const params = useLocalSearchParams();
-    const [teamMembers,setTeamMembers] = useState<{user_id:number; username:string; email:string; role:string}[]>([]);
     const [tasks, setTasks] = useState<{id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean, parent_task_id: number}[]>([]);
     const [progress, setProgress] = useState(0);
-    const { theme, toggleTheme } = useTheme();
-    
-    function calculate_percentage(tasks:{completed: boolean}[]){
+    const { theme } = useTheme();
+    const isTablet = Dimensions.get('window').width > 768;
+    function calculate_percentage(tasks: { completed: boolean }[]) {
         let completed = 0;
         tasks.forEach((task) => {
-            if (task.completed) {
-                completed++;
-            }
+            if (task.completed) completed++;
         });
-        return (completed / tasks.length) * 100;
+        return tasks.length > 0 ? (completed / tasks.length) * 100 : 0;
     }
 
-    useFocusEffect(
-      React.useCallback(() => {
-      const fetchProjectTasks = async () => {
+    const fetchProjectTasks = async () => {
         try {
-        const token = await AsyncStorage.getItem('authToken');
-        const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        const data = await response.json();
-        if (Array.isArray(data)) {
-          const sortedTasks = data.sort((a, b) => {
-          if (!a.deadline && !b.deadline) return 0;
-          if (!a.deadline) return 1;
-          if (!b.deadline) return -1;
-          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-          });
-          setTasks(sortedTasks);
-          setProgress(calculate_percentage(sortedTasks));
-        }
+            const token = await AsyncStorage.getItem('authToken');
+            const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            const data = await response.json();
+            if (Array.isArray(data)) {
+                const sortedTasks = data.sort((a, b) => {
+                    if (!a.deadline && !b.deadline) return 0;
+                    if (!a.deadline) return 1;
+                    if (!b.deadline) return -1;
+                    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+                });
+                setTasks(sortedTasks);
+                setProgress(calculate_percentage(sortedTasks));
+            }
         } catch (error) {
-        console.error("Error fetching project tasks:", error);
+            console.error("Error fetching project tasks:", error);
         }
-      };
-    
-      fetchProjectTasks();
-      }, [params.project_id])
-    );
-    
-      
-  
-    const SubTaskItem = ({ task }: { task: { id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean } }) => {
-        const [checked, setChecked] = useState(task.completed);
-        return (
-          <TouchableOpacity
-          style={[styles.subtaskContainer, { backgroundColor: theme.card }]}
-          onPress={() => setChecked(!checked)}
-      >
-          <Text style={[styles.taskText, { color: theme.text }]}>{task.name}</Text>
-          {task.assigned_to === Number(params.user_id) && (
-              <Ionicons name="person-outline" size={24} color={theme.text} />
-          )}
-      </TouchableOpacity>
-          );
-      };
-
-    const TaskItem = ({ task }: { task: { id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean; parent_task_id: number } }) => {
-      const [checked, setChecked] = useState(task.completed);
-
-      async function modifyTaskStatus(task: { id: number; completed: boolean }) {
-      const token = await AsyncStorage.getItem('authToken');
-      try {
-        const updateTaskAndSubtasks = async (taskId: number, completed: boolean) => {
-          const response = await fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          task_id: taskId,
-          completed: completed,
-        }),
-          });
-
-        if (response.status === 403) {
-          alert('You don\'t have permission for that.');
-          return false;
-        }
-
-        if (response.status === 401) {
-          alert('We couldn\'t authenticate you.');
-          return false;
-        }
-
-        if (!response.ok) {
-          alert('Failed to modify task status on the server.');
-          return false;
-        }
-
-          if (completed) {
-        tasks.forEach((t) => {
-          if (t.parent_task_id === taskId) {
-        t.completed = completed;
-        updateTaskAndSubtasks(t.id, completed);
-          }
-        });
-          }
-          return true;
-        };
-
-        const success = await updateTaskAndSubtasks(task.id, !task.completed);
-        if (success) {
-          toggleCheckbox();
-        }
-      } catch (error) {
-        console.error('Error modifying task status:', error);
-      }
-      }
-
-      const toggleCheckbox = () => {
-      setChecked(!checked);
-      task.completed = !checked;
-
-      const updateSubtasks = (parentTaskId: number, completed: boolean) => {
-        tasks.forEach((t) => {
-        if (t.parent_task_id === parentTaskId) {
-          t.completed = completed;
-          updateSubtasks(t.id, completed); 
-        }
-        });
-      };
-
-      task.completed = !checked;
-      if(task.completed) {
-        updateSubtasks(task.id, task.completed); 
-      }
-      setProgress(calculate_percentage(tasks));
-      };
-
-      return (
-        <TouchableOpacity
-        onPress={() => router.push({ pathname: '/inApp/taskScreen', params: { 
-            team_name: params.team_name, 
-            project_id: params.project_id, 
-            team_id: params.team_id, 
-            task_id: task.id, 
-            task_name: task.name, 
-            task_description: task.description, 
-            task_assigned_to: task.assigned_to, 
-            task_deadline: task.deadline ? task.deadline.toString() : '', 
-            task_completed: task.completed ? task.completed.toString() : '', 
-            user_id: params.user_id } })}
-        style={[styles.taskContainer, { backgroundColor: theme.card }]}
-    >
-        <TouchableOpacity
-            style={[styles.checkbox, { borderColor: theme.text }, checked && { backgroundColor: theme.primary }]}
-            onPress={() => modifyTaskStatus(task)}
-        >
-            {checked && <Ionicons name="checkmark" size={16} color="white" />}
-        </TouchableOpacity>
-        <Text style={[styles.taskText, { color: theme.text }]}>{task.name}</Text>
-        {task.assigned_to === Number(params.user_id) && (
-            <Ionicons name="person-outline" size={24} color={theme.text} />
-        )}
-    </TouchableOpacity>
-      );
     };
-     
 
-  return (
-    <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
-    <TopBar />
-    <Text style={[styles.mainText, { color: theme.text }]}>{params.team_name}</Text>
-    <View style={[styles.MainContainer, { marginBottom: 60 }]}>
-        <View style={styles.headerRow}>
-            <FontAwesome name="tasks" size={32} color={theme.text} style={{ maxWidth: '30%' }} />
-            <Text style={[styles.SmolText, { paddingLeft: 10, color: theme.text }]}>{params.project_name}</Text>
-            <View style={{ maxWidth: '70%', width: '70%' }}>
-                <View style={styles.container}>
-                    <View style={[styles.progressBackground, { backgroundColor: theme.card }]}>
-                        <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.primary }]} />
-                    </View>
-                    <Text style={[styles.text, { color: theme.text }]}>{progress}%</Text>
-                </View>
-            </View>
-        </View>
+    useFocusEffect(
+        React.useCallback(() => {
+            fetchProjectTasks();
+        }, [params.project_id])
+    );
 
-        <View style={styles.headerRow}>
+    const modifyTaskStatus = async (task: any) => {
+        const token = await AsyncStorage.getItem('authToken');
+        try {
+            const updateTaskAndSubtasks = async (taskId: number, completed: boolean) => {
+                const response = await fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        task_id: taskId,
+                        completed: completed,
+                    }),
+                });
+
+                if (response.status === 403) return alert('You don\'t have permission for that.');
+                if (response.status === 401) return alert('We couldn\'t authenticate you.');
+                if (!response.ok) return alert('Failed to modify task status on the server.');
+
+                if (completed) {
+                    tasks.forEach((t) => {
+                        if (t.parent_task_id === taskId) {
+                            t.completed = completed;
+                            updateTaskAndSubtasks(t.id, completed);
+                        }
+                    });
+                }
+                return true;
+            };
+
+            const success = await updateTaskAndSubtasks(task.id, !task.completed);
+            if (success) {
+                const updated = tasks.map(t => {
+                    if (t.id === task.id || t.parent_task_id === task.id) {
+                        return { ...t, completed: !task.completed };
+                    }
+                    return t;
+                });
+                setTasks(updated);
+                setProgress(calculate_percentage(updated));
+            }
+        } catch (error) {
+            console.error('Error modifying task status:', error);
+        }
+    };
+
+    const TaskItem = ({ task }: { task: any }) => {
+        return (
             <TouchableOpacity
-                onPress={() => router.push({ pathname: '/inApp/createTaskScreen', params: { project_id: params.project_id, team_id: params.team_id } })}
-                style={[styles.addButton, { backgroundColor: theme.primary }]}
+                onPress={() => router.push({
+                    pathname: '/inApp/taskScreen', params: {
+                        team_name: params.team_name,
+                        project_id: params.project_id,
+                        team_id: params.team_id,
+                        task_id: task.id.toString(),
+                        task_name: task.name.toString(),
+                        task_description: task.description,
+                        task_assigned_to: task.assigned_to,
+                        task_deadline: task.deadline ? task.deadline.toString() : '',
+                        task_completed: task.completed ? task.completed.toString() : '',
+                    }
+                })}
+                style={[styles.taskContainer, { backgroundColor: theme.card }]}
             >
-                <Ionicons name="add" size={24} color="white" />
+                <TouchableOpacity
+                    style={[styles.checkbox, { borderColor: theme.text }, task.completed && { backgroundColor: theme.primary }]}
+                    onPress={() => modifyTaskStatus(task)}
+                >
+                    {task.completed && <Ionicons name="checkmark" size={16} color="white" />}
+                </TouchableOpacity>
+                <Text style={[styles.taskText, { color: theme.text }]}>{task.name}</Text>
+                {task.assigned_to === Number(params.user_id) && (
+                    <Ionicons name="person-outline" size={24} color={theme.text} />
+                )}
             </TouchableOpacity>
-        </View>
+        );
+    };
 
-        <FlatList
-            style={{ width: "100%" }}
-            data={tasks.filter(task => task.parent_task_id == null)}
-            keyExtractor={item => item.id.toString()}
-            renderItem={({ item }) => (
-                <View>
-                    <TaskItem task={item} />
-                    {tasks
-                        .filter(subtask => subtask.parent_task_id === item.id)
-                        .map(subtask => (
-                            <View key={subtask.id} style={{ marginLeft: 50 }}>
-                                <SubTaskItem task={subtask} />
+    if (isTablet) {
+        return (
+            <TabletProjectScreen
+                teamName={Array.isArray(params.team_name) ? params.team_name[0] : params.team_name}
+                projectName={params.project_name?.toString() || ''}
+                tasks={tasks}
+                progress={progress}
+                userId={Number(params.user_id)}
+                onModifyTaskStatus={modifyTaskStatus}
+            />
+        );
+    }
+
+    return (
+        <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
+            <TopBar />
+            <Text style={[styles.mainText, { color: theme.text }]}>{Array.isArray(params.team_name) ? params.team_name[0] : params.team_name}</Text>
+            <View style={[styles.MainContainer, { marginBottom: 60 }]}>
+                <View style={styles.headerRow}>
+                    <FontAwesome name="tasks" size={32} color={theme.text} style={{ maxWidth: '30%' }} />
+                    <Text style={[styles.SmolText, { paddingLeft: 10, color: theme.text }]}>{params.project_name}</Text>
+                    <View style={{ maxWidth: '70%', width: '70%' }}>
+                        <View style={styles.container}>
+                            <View style={[styles.progressBackground, { backgroundColor: theme.card }]}>
+                                <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.primary }]} />
                             </View>
-                        ))}
+                            <Text style={[styles.text, { color: theme.text }]}>{progress}%</Text>
+                        </View>
+                    </View>
                 </View>
-            )}
-            contentContainerStyle={{ padding: 16 }}
-        />
-    </View>
-    <BottomBar />
-</SafeAreaView>
 
-  );
+                <View style={styles.headerRow}>
+                    <TouchableOpacity
+                        onPress={() => router.push({ pathname: '/inApp/createTaskScreen', params: { project_id: params.project_id, team_id: params.team_id } })}
+                        style={[styles.addButton, { backgroundColor: theme.primary }]}
+                    >
+                        <Ionicons name="add" size={24} color="white" />
+                    </TouchableOpacity>
+                </View>
+
+                <FlatList
+                    style={{ width: "100%" }}
+                    data={tasks.filter(task => task.parent_task_id == null)}
+                    keyExtractor={item => item.id.toString()}
+                    renderItem={({ item }) => (
+                        <View>
+                            <TaskItem task={item} />
+                            {tasks
+                                .filter(subtask => subtask.parent_task_id === item.id)
+                                .map(subtask => (
+                                    <View key={subtask.id} style={{ marginLeft: 50 }}>
+                                        <TaskItem task={subtask} />
+                                    </View>
+                                ))}
+                        </View>
+                    )}
+                    contentContainerStyle={{ padding: 16 }}
+                />
+            </View>
+            <BottomBar />
+        </SafeAreaView>
+    );
 };
 
-
 const styles = StyleSheet.create({
+    // styles remain unchanged
     MainContainer: {
         padding: 10,
         flex: 1,
         width: "100%",
         alignItems: "center",
-       
     },
     SmolText: {
         fontSize: 18,
@@ -271,74 +237,26 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 10,
     },
-    teamButton: {
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderRadius: 10,
-        marginVertical: 5,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    teamButtonText: {
-        fontSize: 18,
-        fontWeight: '600',
-        textAlign: 'center',
-        color: "#444",
-    },
-    noTeamsText: {
-        fontSize: 16,
-        fontStyle: 'italic',
-        color: '#888',
-        textAlign: 'center',
-        marginTop: 20,
-    },
-    teamList: {
-        width: "90%",
-        marginTop: 10,
-        marginBottom: 20,
-    },
-    memberBlock: {
-        width: '80%',
-        padding: 10,
-        borderRadius: 8,
-        marginVertical: 5,
-        marginLeft: '10%',
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between'
-    },
-    member: {
-        fontSize: 16,
-        fontWeight: "500",
-        color: "black",
-    },
-    memberRole: {
-        color: 'gray',
-
-    },
     container: {
         alignItems: 'center',
         margin: 20,
-      },
-      progressBackground: {
+    },
+    progressBackground: {
         width: 200,
         height: 20,
         borderRadius: 10,
         overflow: 'hidden',
-      },
-      progressFill: {
+    },
+    progressFill: {
         height: '100%',
         borderRadius: 10,
-      },
-      text: {
+    },
+    text: {
         marginTop: 8,
         fontSize: 16,
         fontWeight: '500',
-      },
-      taskContainer: {
+    },
+    taskContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 12,
@@ -346,31 +264,20 @@ const styles = StyleSheet.create({
         marginTop: 12,
         justifyContent: 'space-between',
         borderBottomRightRadius: 0,
-
-      },
-      checkbox: {
+    },
+    checkbox: {
         width: 24,
         height: 24,
         borderRadius: 4,
         borderWidth: 1,
-        borderColor: '#333',
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
-      },
-      taskText: {
+    },
+    taskText: {
         flex: 1,
         fontSize: 16,
-      },
-      subtaskContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 10,
-        borderColor: '#333',
-        justifyContent: 'space-between',
-        borderTopRightRadius: 0,
-        borderTopLeftRadius: 0,
-      }
+    },
 });
 
 export default TeamScreen;

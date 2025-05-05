@@ -15,7 +15,11 @@ import { getUserId, storeUser, storeUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
 import LoadingOverlay from '../../components/LoadingOverlay';
-import messaging from '@react-native-firebase/messaging';
+// import messaging from '@react-native-firebase/messaging';
+import { PermissionsAndroid, Platform } from 'react-native';
+import { Dimensions } from 'react-native';
+import TabletLogin from '../tabletViews/TabletLogin';
+const isTablet = Dimensions.get('window').width >= 768;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -54,6 +58,19 @@ export default function LoginScreen() {
     }
   }
 
+  async function requestUserPermission() {
+    const authStatus = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+      if (authStatus === PermissionsAndroid.RESULTS.GRANTED) {
+        console.log('Notification permission granted');
+        return true;
+      }
+      else{
+        console.log('Notification permission denied');
+        return false;
+      }
+    }
+  
   async function Login() {
     setIsLoading(true);
     try {
@@ -62,7 +79,7 @@ export default function LoginScreen() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
+  
       if (response.ok) {
         const data = await response.json();
         const userInfo = {
@@ -73,17 +90,26 @@ export default function LoginScreen() {
         };
         await storeUserId(data.userID, data.token);
         await storeUser(userInfo);
+  
+        // const permissionGranted = await requestUserPermission();
+        // if (permissionGranted) {
+        // const fcmToken = await messaging().getToken();
+        // console.log('FCM Token:', fcmToken);
+        // if (fcmToken) {
+        //   await registerDeviceToken(fcmToken, data.token);
+        // }
 
-        const fcmToken = await messaging().getToken();
-        if (fcmToken) {
-          await registerDeviceToken(fcmToken, data.token);
-        }
+        // } else {
+        //   console.warn('Push notification permission not granted');
 
+        // }
         router.replace('/inApp/homeScreen');
+  
       } else {
         Alert.alert('Invalid email or password');
       }
     } catch (error) {
+      console.error(error);
       Alert.alert('Could not log in');
     } finally {
       setIsLoading(false);
@@ -143,7 +169,33 @@ export default function LoginScreen() {
       setIsLoading(false);
     }
   };
-
+  if (isTablet) {
+    return (
+      <TabletLogin
+        email={email}
+        password={password}
+        onEmailChange={setEmail}
+        onPasswordChange={setPassword}
+        onLogin={Login}
+        isLoading={isLoading}
+        theme={theme}
+        onNavigateRegister={() => router.replace('/auth/register')}
+        onOpenForgot={() => setForgotVisible(true)}
+        forgotVisible={forgotVisible}
+        setForgotVisible={setForgotVisible}
+        resetEmail={resetEmail}
+        setResetEmail={setResetEmail}
+        resetCode={resetCode}
+        setResetCode={setResetCode}
+        newPassword1={newPassword1}
+        setNewPassword1={setNewPassword1}
+        newPassword2={newPassword2}
+        setNewPassword2={setNewPassword2}
+        step={step}
+        handleResetFlow={handleResetFlow}
+      />
+    );
+  }
   return (
     <View style={[styles.MainContainer, { backgroundColor: theme.background }]}>
       <Text style={[styles.MainText, { color: theme.text }]}>Log In</Text>

@@ -119,7 +119,7 @@ export default function CreateProjectScreen() {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.primary, flex: 1 ,width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }]}>
       <ActivityIndicator size="large" color={theme.text} />
-      <Text style={[styles.loadingText, { color: theme.text }]}>Creating Project...</Text>
+      <Text style={[styles.loadingText, { color: theme.text }]}>Creating Task...</Text>
     </View>
     )
   }

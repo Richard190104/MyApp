@@ -8,9 +8,15 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { ipAddr } from "@/components/backendip";
 import { storeTeamMembers } from "@/components/getUser";
 import { useTheme } from '@/components/ThemeContext';
+import { useWindowDimensions } from 'react-native';
 
-const TeamScreen = () => {
-    const params = useLocalSearchParams();
+const TeamScreen = (props: any) => {
+    const localParams = useLocalSearchParams();
+    const team_id = props?.team_id || localParams?.team_id;
+    const team_name = props?.team_name || localParams?.team_name;
+    const team_creator_id = props?.team_creator_id || localParams?.team_creator_id;
+    const usero = props?.usero || localParams?.user;
+
     const [projects, setProjects] = useState<{ id: number; team_id: number; project_name: string; deadline: Date }[]>([]);
     const [user, setUser] = useState<number|null>();
     const [teamMembers,setTeamMembers] = useState<{user_id:number; username:string; email:string; role:string; profile_picture?: string}[]>([]);
@@ -23,16 +29,16 @@ const TeamScreen = () => {
     useEffect(() => {
         const fetchUserAndTeams = async () => {
             const token = await AsyncStorage.getItem('authToken');
+            console.log(team_id)
 
-            if (typeof params.user === "string") {
-            setUser(parseInt(params.user, 10));
+            if (typeof usero === "string") {
+            setUser(parseInt(usero, 10));
             } else {
-            console.warn("Invalid user parameter:", params.user);
+            console.warn("Invalid user parameter:", usero);
             }
-
             if (user !== null) {
             try {
-                const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${params.team_id}`, {
+                const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${team_id}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -54,7 +60,7 @@ const TeamScreen = () => {
         const fetchTeamMembers = async () => {
             try {
             const token = await AsyncStorage.getItem('authToken');
-            const response = await fetch(`http://${ipAddr}:5000/getTeamMembers?teamID=${params.team_id}`, {
+            const response = await fetch(`http://${ipAddr}:5000/getTeamMembers?teamID=${team_id}`, {
                 method: 'GET',
                 headers: {
                 'Authorization': `Bearer ${token}`,
@@ -68,8 +74,8 @@ const TeamScreen = () => {
                 .filter(member => member.role === 'admin' || member.role === 'owner')
                 .map(member => member.user_id);
                 setProjectAdmins(admins);
-                if (typeof params.team_id === "string") {
-                storeTeamMembers(data, parseInt(params.team_id));
+                if (typeof team_id === "string") {
+                storeTeamMembers(data, parseInt(team_id));
                 }
             }
             } catch (error) {
@@ -80,7 +86,7 @@ const TeamScreen = () => {
         fetchTeamMembers();
         fetchUserAndTeams();
         
-    }, []);
+    }, [team_id]);
 
     async function removeTeamMember(user_id: number) {
         try {
@@ -93,17 +99,17 @@ const TeamScreen = () => {
             },
             body: JSON.stringify({
                 user_id: user_id,
-                team_id: params.team_id,
+                team_id: team_id,
             }), 
             });
 
             if (response.ok) {
             alert("Team member removed successfully!");
             setTeamMembers(prevMembers => prevMembers.filter(member => member.user_id !== user_id));
-            if (typeof params.team_id === "string") {
-                storeTeamMembers(teamMembers, parseInt(params.team_id, 10));
+            if (typeof team_id === "string") {
+                storeTeamMembers(teamMembers, parseInt(team_id, 10));
             } else {
-                console.warn("Invalid team ID:", params.team_id);
+                console.warn("Invalid team ID:", team_id);
             }
             } else if (response.status === 403) {
             alert("You don't have permission for that.");
@@ -129,7 +135,7 @@ const TeamScreen = () => {
                 },
                 body: JSON.stringify({
                      email: email, 
-                     team_id: params.team_id,
+                     team_id: team_id,
                 }),
             });
 
@@ -159,7 +165,7 @@ const TeamScreen = () => {
                 },
                 body: JSON.stringify({
                     user_id: user_id,
-                    team_id: params.team_id,
+                    team_id: team_id,
                     new_role: option,
                 }),
             });
@@ -186,13 +192,13 @@ const TeamScreen = () => {
 
   return (
 <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
-  <TopBar />
-  <Text style={[styles.mainText, { color: theme.text }]}>{params.team_name}</Text>
+{useWindowDimensions().width < 768 && <TopBar />}
+  <Text style={[styles.mainText, { color: theme.text }]}>{team_name}</Text>
 
   <View style={styles.headerRow}>
     <Text style={[styles.SmolText, { color: theme.text }]}>Team projects</Text>
     <TouchableOpacity
-      onPress={() => router.push({ pathname: '/inApp/createProjectScreen', params: { team_id: params.team_id.toString(), team_name: params.team_name, team_creator_id: params.team_creator_id, user: user?.toString() } })}
+      onPress={() => router.push({ pathname: '/inApp/createProjectScreen', params: { team_id: team_id.toString(), team_name: team_name, team_creator_id: team_creator_id, user: user?.toString() } })}
       style={[styles.addButton, { backgroundColor: theme.primary }]}
     >
       <Ionicons name="add" size={24} color="white" />
@@ -206,7 +212,7 @@ const TeamScreen = () => {
           <TouchableOpacity
             key={project.id}
             style={[styles.teamButton, { backgroundColor: theme.card }]}
-            onPress={() => router.push({ pathname: '/inApp/projectscreen', params: { project_id: project.id.toString(), project_name: project.project_name, team_id: params.team_id, user_id: user, project_deadline: project.deadline.toString(), team_name: params.team_name } })}
+            onPress={() => router.push({ pathname: '/inApp/projectscreen', params: { project_id: project.id.toString(), project_name: project.project_name, team_id: team_id, user_id: user, project_deadline: project.deadline.toString(), team_name: team_name } })}
           >
             <Text style={[styles.teamButtonText, { color: theme.text }]}>{project.project_name}</Text>
           </TouchableOpacity>
@@ -220,7 +226,7 @@ const TeamScreen = () => {
       <View style={{ width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={[styles.SmolText, { color: theme.text }]}>Team Members</Text>
         <View style={{ flexDirection: 'row', gap: 15 }}>
-          <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/chatScreen', params: { team_id: params.team_id, user_id: user } })}>
+          <TouchableOpacity onPress={() => router.push({ pathname: '/inApp/chatScreen', params: { team_id: team_id, user_id: user } })}>
             <MaterialCommunityIcons name="message-text-outline" size={25} color={theme.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setShowInput(!showInput)}>
@@ -344,7 +350,7 @@ const TeamScreen = () => {
       )}
     </View>
   </ScrollView>
-  <BottomBar />
+  {useWindowDimensions().width < 768 && <BottomBar />}
 </SafeAreaView>
   );
 };

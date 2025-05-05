@@ -75,8 +75,16 @@ export default function CalendarScreen() {
     };
     
     useEffect(() => {
-      const userId = 7; 
-      getTasks(userId);
+      (async () => {
+        const userIdString = await AsyncStorage.getItem('userId');
+        const userId = userIdString ? parseInt(userIdString, 10) : null;
+        if (userId !== null) {
+          console.log(userId);
+          getTasks(userId);
+        } else {
+          console.error('User ID is null or invalid.');
+        }
+      })();
     }, []);
 
     const getDaysInMonth = (year: number, month: number) => {
@@ -223,7 +231,7 @@ export default function CalendarScreen() {
               }}
               onPress={() => {
                 if (item.task) {
-                  alert(`Team: ${item.task.teamName}\nTask: ${item.task.name}\nDescription: ${item.task.description}\nAssigned to: ${item.task.assignedTo}`);
+                  alert(`Team: ${item.task.teamName}\nTask: ${item.task.name}\nDescription: ${item.task.description}\nAssigned to: me`);
                 }
               }}
             >
@@ -238,7 +246,7 @@ export default function CalendarScreen() {
                   <Text style={{ fontSize: 14, color: theme.text }}>{item.task.name}</Text>
                   <Text style={{ fontSize: 12, color: theme.text }}>{item.task.description}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5 }}>
-                    <Text style={{ fontSize: 12, color: theme.text }}>Assigned to: {item.task.assignedTo}</Text>
+                    <Text style={{ fontSize: 12, color: theme.text }}>Assigned to: me</Text>
                     <MaterialCommunityIcons name="account-circle-outline" size={18} color={theme.text} style={{ marginLeft: 5 }} />
                   </View>
                 </View>

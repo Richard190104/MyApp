@@ -12,8 +12,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import React from "react";
 import * as Speech from 'expo-speech';
 import { useTheme } from '@/components/ThemeContext';
-
+import { Dimensions } from "react-native";
 const TaskScreen = () => {
+  const isTablet = Dimensions.get('window').width >= 768;
   const params = useLocalSearchParams();
   const [assignedMember, setAssignedMember] = useState<string | null>(null);
   const [tasks, setTasks] = useState<{id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean, parent_task_id: number}[]>([]);
@@ -249,11 +250,15 @@ const TaskScreen = () => {
         </Modal>
       )}
     </View>
-
+    <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'center', flexDirection: 'row' }}>
+      <Text style={[styles.subsubHeader, { color: theme.text, marginBottom: 0 }]}>Deadline: </Text>
+    </View>
+    <Text style={[styles.description, { color: theme.text, fontSize: 12 , marginVertical: 0 }]}>{params.task_deadline}</Text>
     <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start' }}>
       <Text style={[styles.subHeader, { color: theme.text }]}>Description</Text>
     </View>
     <Text style={[styles.description, { color: theme.text }]}>{params.task_description}</Text>
+
     <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start' }}>  
     <Text style={[styles.subHeader, { color: theme.text }]}>Subtasks</Text>
     <TouchableOpacity
@@ -359,6 +364,11 @@ const styles = StyleSheet.create({
   },
   subHeader: {
     fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 5,
+  },
+  subsubHeader: {
+    fontSize: 14,
     fontWeight: 'bold',
     marginVertical: 5,
   },

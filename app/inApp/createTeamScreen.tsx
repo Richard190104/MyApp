@@ -17,6 +17,9 @@ import { useRouter } from 'expo-router';
 import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
+import { Dimensions } from 'react-native';
+import TabletCreateTeamScreen from '../tabletViews/TabletCreateTeam';
+const isTablet = Dimensions.get('window').width >= 768;
 
 export default function CreateTeamScreen() {
   const router = useRouter();
@@ -93,7 +96,9 @@ export default function CreateTeamScreen() {
       </View>
     );
   }
-
+  if(isTablet) {
+    return <TabletCreateTeamScreen teamName={teamName} setTeamName={setTeamName} teamDescription={teamDescription} setTeamDescription={setTeamDescription} memberEmail={memberEmail} setMemberEmail={setMemberEmail} members={members} setMembers={setMembers} handleCreateTeam={handleCreateTeam} errors={errors} isLoading={isLoading}/>
+  }
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <TopBar />

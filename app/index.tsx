@@ -7,6 +7,9 @@ import {getUserId, storeUser, storeUserId} from "../components/getUser";
 import {ipAddr} from "../components/backendip"; 
 import { useTheme } from '@/components/ThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Dimensions } from 'react-native';
+import TabletIndex from "./tabletViews/tabletindex"; 
+const isTablet = Dimensions.get('window').width >= 768;
 
 const App = () => {
   const navigation = useNavigation();
@@ -48,7 +51,9 @@ async function Login(email: string, password: string) {
             alert("Could not log in");
         }
     }
-
+    if(isTablet){
+      return TabletIndex();
+    }
 
   return (
     <View style={[styles.MainContainer, { backgroundColor: theme.background }]}>

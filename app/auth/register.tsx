@@ -4,6 +4,9 @@ import React from 'react';
 import ButtonMain from '@/components/button';
 import {ipAddr} from "@/components/backendip"; 
 import { useTheme } from '@/components/ThemeContext';
+import { Dimensions } from 'react-native';
+import TabletRegister from '../tabletViews/TabletRegister';
+const isTablet = Dimensions.get('window').width >= 768;
 export default function RegisterScreen() {
     const router = useRouter();
     const { theme } = useTheme();
@@ -40,7 +43,9 @@ export default function RegisterScreen() {
             alert('Passwords do not match');
         }
     }
-
+    if (isTablet) {
+        return <TabletRegister email={email} username={username} password={password} repeatPassword={Rpassword} onEmailChange={setEmail} onUsernameChange={setName} onPasswordChange={setPassword} onRepeatPasswordChange={setRPassword} onRegister={register} onNavigateLogin={() => router.replace("/auth/login")} theme={theme} />;
+    }
     return (
         <View style={[styles.MainContainer, { backgroundColor: theme.background }]}>
             <Text style={[styles.MainText, {color: theme.text}]}>Register</Text>
