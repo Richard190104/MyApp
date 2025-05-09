@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, FlatList, Dimensions } from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, FlatList, Dimensions, Alert } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import BottomBar from "@/components/bottomBar";
@@ -10,13 +10,18 @@ import { useFocusEffect } from '@react-navigation/native';
 import React from "react";
 import { useTheme } from '@/components/ThemeContext';
 import TabletProjectScreen from "../tabletViews/TabletProjectScreen";
-
+import NetInfo from '@react-native-community/netinfo';
+import io from 'socket.io-client';
+import { addToQueue } from "@/components/queue";
 const TeamScreen = () => {
     const params = useLocalSearchParams();
     const [tasks, setTasks] = useState<{id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean, parent_task_id: number}[]>([]);
     const [progress, setProgress] = useState(0);
     const { theme } = useTheme();
     const isTablet = Dimensions.get('window').width > 768;
+    const socket = io(`http://${ipAddr}:5000`);
+  const [newMessage, setNewMessage] = useState('');
+
     function calculate_percentage(tasks: { completed: boolean }[]) {
         let completed = 0;
         tasks.forEach((task) => {
@@ -26,27 +31,49 @@ const TeamScreen = () => {
     }
 
     const fetchProjectTasks = async () => {
-        try {
-            const token = await AsyncStorage.getItem('authToken');
-            const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
-            const data = await response.json();
-            if (Array.isArray(data)) {
-                const sortedTasks = data.sort((a, b) => {
-                    if (!a.deadline && !b.deadline) return 0;
-                    if (!a.deadline) return 1;
-                    if (!b.deadline) return -1;
-                    return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        const state = await NetInfo.fetch();
+        if(state.isConnected) {
+            console.log("Internet is connected. Fetching project tasks from backend...");
+        
+            try {
+                const token = await AsyncStorage.getItem('authToken');
+                const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    },
                 });
-                setTasks(sortedTasks);
-                setProgress(calculate_percentage(sortedTasks));
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    const sortedTasks = data.sort((a, b) => {
+                        if (!a.deadline && !b.deadline) return 0;
+                        if (!a.deadline) return 1;
+                        if (!b.deadline) return -1;
+                        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+                    });
+                    setTasks(sortedTasks);
+                    await AsyncStorage.setItem(`tasks_${params.project_id}`, JSON.stringify(sortedTasks));
+                    console.log("Tasks fetched and stored locally.");
+                    setProgress(calculate_percentage(sortedTasks));
+                }
+            } catch (error) {
+                console.error("Error fetching project tasks:", error);
             }
-        } catch (error) {
-            console.error("Error fetching project tasks:", error);
         }
+        else {
+            console.log("No internet connection. Trying to load tasks from cache...");
+            const cached = await AsyncStorage.getItem(`tasks_${params.project_id}`);
+            console.log(cached)
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                setTasks(parsed);
+                setProgress(calculate_percentage(parsed));
+                console.log("Tasks loaded from cache.");
+            } else {
+                console.warn("No cached tasks found.");
+            }
+        }
+
+       
     };
 
     useFocusEffect(
@@ -54,53 +81,87 @@ const TeamScreen = () => {
             fetchProjectTasks();
         }, [params.project_id])
     );
+    const sendMessage = () => {
+        if (newMessage.trim() === '') return;
+    
+        socket.emit('send_message', {
+          sender_id: 50,
+          team_id: params.team_id,
+          content: newMessage,
+        });
+      }
 
-    const modifyTaskStatus = async (task: any) => {
-        const token = await AsyncStorage.getItem('authToken');
-        try {
-            const updateTaskAndSubtasks = async (taskId: number, completed: boolean) => {
-                const response = await fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({
-                        task_id: taskId,
-                        completed: completed,
-                    }),
-                });
+   
 
-                if (response.status === 403) return alert('You don\'t have permission for that.');
-                if (response.status === 401) return alert('We couldn\'t authenticate you.');
-                if (!response.ok) return alert('Failed to modify task status on the server.');
+const modifyTaskStatus = async (task: any) => {
+  const token = await AsyncStorage.getItem('authToken');
+  const state = await NetInfo.fetch();
+  const projectKey = `tasks_${params.project_id}`;
+  const stored = await AsyncStorage.getItem(projectKey);
+  const parsedTasks = stored ? JSON.parse(stored) : [];
+  const newCompleted = !task.completed;
 
-                if (completed) {
-                    tasks.forEach((t) => {
-                        if (t.parent_task_id === taskId) {
-                            t.completed = completed;
-                            updateTaskAndSubtasks(t.id, completed);
-                        }
-                    });
-                }
-                return true;
-            };
+  
 
-            const success = await updateTaskAndSubtasks(task.id, !task.completed);
-            if (success) {
-                const updated = tasks.map(t => {
-                    if (t.id === task.id || t.parent_task_id === task.id) {
-                        return { ...t, completed: !task.completed };
-                    }
-                    return t;
-                });
-                setTasks(updated);
-                setProgress(calculate_percentage(updated));
-            }
-        } catch (error) {
-            console.error('Error modifying task status:', error);
+  if (state.isConnected) {
+    try {
+      const response = await fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          task_id: task.id,
+          completed: newCompleted,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        if(response.status == 403){
+            Alert.alert('Error', 'You don’t have permission for that.');
         }
-    };
+        throw new Error(`Server error: ${errorText}`);
+      }
+      else{
+        const updated = parsedTasks.map((t: any) =>
+            t.id === task.id ? { ...t, completed: newCompleted } : t
+        );
+
+        
+        setTasks(updated);
+        setProgress(calculate_percentage(updated));
+        await AsyncStorage.setItem(projectKey, JSON.stringify(updated));
+        setNewMessage(`Changed status of task: ${task.name} to ${newCompleted}`);
+      sendMessage();
+      }
+      
+    } catch (error) {
+      console.error('Error updating task online:', error);
+    }
+  } else {
+    addToQueue({
+      url: `http://${ipAddr}:5000/modifyTaskStatus`,
+      method: 'PUT',
+      body: {
+        task_id: task.id,
+        completed: newCompleted,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const updated = parsedTasks.map((t: any) =>
+            t.id === task.id ? { ...t, completed: newCompleted } : t
+        );
+    setTasks(updated);
+    setProgress(calculate_percentage(updated));
+    await AsyncStorage.setItem(projectKey, JSON.stringify(updated))
+    Alert.alert('Offline Mode', 'Task status updated locally and will sync when online.');
+  }
+};
+
 
     const TaskItem = ({ task }: { task: any }) => {
         return (
@@ -108,6 +169,7 @@ const TeamScreen = () => {
                 onPress={() => router.push({
                     pathname: '/inApp/taskScreen', params: {
                         team_name: params.team_name,
+                        user_id: params.user_id,
                         project_id: params.project_id,
                         team_id: params.team_id,
                         task_id: task.id.toString(),
@@ -144,6 +206,7 @@ const TeamScreen = () => {
                 userId={Number(params.user_id)}
                 onModifyTaskStatus={modifyTaskStatus}
                 projectID={params.project_id?.toString() || ''}
+                teamID={Number(params.team_id)}
             />
         );
     }
@@ -183,7 +246,7 @@ const TeamScreen = () => {
                         <View>
                             <TaskItem task={item} />
                             {tasks
-                                .filter(subtask => subtask.parent_task_id === item.id)
+                                .filter(subtask => String(subtask.parent_task_id) === String(item.id))
                                 .map(subtask => (
                                     <View key={subtask.id} style={{ marginLeft: 50 }}>
                                         <TaskItem task={subtask} />
@@ -200,7 +263,6 @@ const TeamScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    // styles remain unchanged
     MainContainer: {
         padding: 10,
         flex: 1,

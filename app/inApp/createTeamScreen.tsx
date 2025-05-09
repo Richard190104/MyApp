@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,9 @@ import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
 import { Dimensions } from 'react-native';
 import TabletCreateTeamScreen from '../tabletViews/TabletCreateTeam';
+import NetInfo from '@react-native-community/netinfo';
+import { addToQueue, getQueue } from '@/components/queue';
+
 const isTablet = Dimensions.get('window').width >= 768;
 
 export default function CreateTeamScreen() {
@@ -34,7 +38,11 @@ export default function CreateTeamScreen() {
     description: false,
   });
   const [isLoading, setIsLoading] = useState(false);
-
+const generateLocalId = () => {
+  const timestamp = Date.now().toString(36); // čas ako základ 36 (skráti číslo)
+  const random = Math.floor(Math.random() * 1e6).toString(36); // náhodné číslo
+  return `local-${timestamp}-${random}`;
+};
   const handleCreateTeam = async () => {
     const userID = await getUserId();
     const nameEmpty = !teamName.trim();
@@ -43,44 +51,82 @@ export default function CreateTeamScreen() {
       setErrors({ name: nameEmpty, description: descEmpty });
       return;
     }
-
+   
     try {
       setIsLoading(true);
-      const token = await AsyncStorage.getItem('authToken');
-      if (!token) {
-        setIsLoading(false);
-        Alert.alert('Error', 'Authentication token not found.');
-        return;
-      }
+      const state = await NetInfo.fetch();
+      if(state.isConnected){
+        const token = await AsyncStorage.getItem('authToken');
+        if (!token) {
+          setIsLoading(false);
+          Alert.alert('Error', 'Authentication token not found.');
+          return;
+        }
 
-      const response = await fetch(`http://${ipAddr}:5000/createTeam`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+        const response = await fetch(`http://${ipAddr}:5000/createTeam`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: teamName,
+            description: teamDescription,
+            user_id: userID,
+            members,
+          }),
+        });
+        const data = await response.json();
+        
+
+        if (response.ok) {
+          setTimeout(() => {
+            router.replace({ pathname:'/inApp/homeScreen', params: { team_name: teamName, onTeam: "1" }});
+            setIsLoading(false);
+
+          }, 2000);
+        
+        } else {
+          Alert.alert('Error', data.message || 'Failed to create team.');
+          setIsLoading(false);
+
+        }
+      }
+      else{
+        const userID = await getUserId();
+        const id =  generateLocalId()
+        const newTeamData = {
           name: teamName,
           description: teamDescription,
           user_id: userID,
           members,
-        }),
-      });
-      const data = await response.json();
-      
+          id: id,
+        };
+          addToQueue({
+            url: `http://${ipAddr}:5000/createTeam`,
+            method: 'POST',
+            body: {
+              name: teamName,
+              description: teamDescription,
+              user_id: userID,
+              members,
+              id: id,
+            },
+            headers: {
+              Authorization: `Bearer ${await AsyncStorage.getItem('authToken')}`,
+            },
+          });
+          const existing = await AsyncStorage.getItem(`teams_${userID}`);
+          const existingTeams = existing ? JSON.parse(existing) : [];
 
-      if (response.ok) {
-        setTimeout(() => {
-          router.replace('/inApp/homeScreen');
+          const updatedTeams = [...existingTeams, newTeamData];
+
+          await AsyncStorage.setItem(`teams_${userID}`, JSON.stringify(updatedTeams));
+          Alert.alert('Offline', 'You are offline. The team will be created when connection is restored.');
+          router.replace({ pathname:'/inApp/homeScreen', params: { team_name: teamName, onTeam: "1" }});
           setIsLoading(false);
-
-        }, 2000);
-       
-      } else {
-        Alert.alert('Error', data.message || 'Failed to create team.');
-        setIsLoading(false);
-
       }
+      
     } catch (error) {
       setIsLoading(false);
       Alert.alert('Error', 'Something went wrong!');
@@ -167,13 +213,13 @@ export default function CreateTeamScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.membersList}>
+      <ScrollView  style={styles.membersList}>
         {members.map((email, ix) => (
           <Text key={ix} style={[styles.memberItem, { color: theme.text }]}>
             • {email}
           </Text>
         ))}
-      </View>
+      </ScrollView >
 
       <TouchableOpacity
         style={[styles.createButton, { backgroundColor: theme.primary }]}
@@ -203,7 +249,7 @@ const styles = StyleSheet.create({
   addButtonText: { color: 'white', fontWeight: 'bold' },
   membersList: { width: '90%', marginBottom: 10 },
   memberItem: { fontSize: 16, marginBottom: 4 },
-  createButton: { padding: 15, borderRadius: 8, width: '100%', alignItems: 'center', marginTop: 20 },
+  createButton: { padding: 15, borderRadius: 8, width: '100%', alignItems: 'center', marginTop: 20, marginBottom:80 },
   createButtonText: { fontSize: 16, fontWeight: 'bold', color: 'white' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { marginTop: 10, fontSize: 18, color: '#fff', fontWeight: 'bold' },

@@ -1,4 +1,4 @@
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, FlatList, Modal } from "react-native";
+import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet, FlatList, Modal, Alert } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomBar from "@/components/bottomBar";
@@ -7,13 +7,20 @@ import { useEffect, useState } from "react";
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { ipAddr } from "@/components/backendip";
 import { MaterialIcons } from '@expo/vector-icons';
-import { getTeamMembers } from "@/components/getUser";
 import { useFocusEffect } from '@react-navigation/native';
 import React from "react";
 import * as Speech from 'expo-speech';
 import { useTheme } from '@/components/ThemeContext';
 import { Dimensions } from "react-native";
+import  TabletTaskScreen from "@/app/tabletViews/TabletTask";
+import { useWindowDimensions } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+import io from 'socket.io-client';
+import { addToQueue } from "@/components/queue";
+
 const TaskScreen = () => {
+  const { width } = useWindowDimensions();
+
   const isTablet = Dimensions.get('window').width >= 768;
   const params = useLocalSearchParams();
   const [assignedMember, setAssignedMember] = useState<string | null>(null);
@@ -23,118 +30,199 @@ const TaskScreen = () => {
   const [showRoleOptions, setShowRoleOptions] = useState<{ [key: string]: boolean }>({});
   const [members, setMembers] = useState<{ user_id: number; username: string; role: string }[]>([]);
   const { theme, toggleTheme } = useTheme();
-  console.log(params)
-  const speak = () => {
-    const text = `Hello, you are on the task screen. The task name is ${params.task_name} and it is assigned to ${assignedMember}.`;
+  const [newMessage, setNewMessage] = useState('');
+  const socket = io(`http://${ipAddr}:5000`);
+  type Task = {
+    id: number | string;
+    name: string;
+    description: string;
+    assigned_to: number;
+    deadline: string | Date;
+    completed: boolean;
+    parent_task_id: number | null;
+  };
+  
+  const speak = (text: string) => {
+    
     Speech.speak(text, { language: 'en-US', pitch: 1.0, rate: 1.0 });
   };
-
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
-    (async () => {
-      if (typeof params.team_id === 'string') {
-        const members = await getTeamMembers(parseInt(params.team_id, 10));
-        setMembers(members);
-        if (Array.isArray(members)) {
-          const assigned = members.find(
-            (member) => member.user_id === parseInt(Array.isArray(params.task_assigned_to) ? params.task_assigned_to[0] : params.task_assigned_to, 10)
-          );
-          setAssignedMember(assigned ? assigned.username : '--');
 
-          const currentUser = members.find(
-            (member) => member.user_id === parseInt(Array.isArray(params.user_id) ? params.user_id[0] : params.user_id, 10)
-          );
-          setUserRole( currentUser ? currentUser.role : null);
-        } else {
-          console.error('Invalid team members data:', members);
+    const loadMembers = async () => {
+      if (typeof params.team_id === 'string') {
+        try {
+          const stored = await AsyncStorage.getItem(`teamMembers_${params.team_id}`);
+          if (stored) {
+            const parsedMembers = JSON.parse(stored) as { user_id: number; username: string; role: string }[];
+            setMembers(parsedMembers);
+    
+            const assigned = parsedMembers.find(
+              (member) =>
+                member.user_id ===
+                parseInt(
+                  Array.isArray(params.task_assigned_to)
+                    ? params.task_assigned_to[0]
+                    : params.task_assigned_to,
+                  10
+                )
+            );
+            setAssignedMember(assigned ? assigned.username : '--');
+    
+            const currentUser = parsedMembers.find(
+              (member) =>
+                member.user_id ===
+                parseInt(
+                  Array.isArray(params.user_id)
+                    ? params.user_id[0]
+                    : params.user_id,
+                  10
+                )
+            );
+            setUserRole(currentUser ? currentUser.role : null);
+          } else {
+            setMembers([]);
+            setAssignedMember('--');
+          }
+        } catch (err) {
+          console.error('Failed to load team members', err);
+        } finally {
+          setIsLoading(false);
         }
       }
-    })();
-    speak();
+    };
+    
+  
+    loadMembers();
   }, []);
+  
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchProjectTasks = async () => {
-        try {
-          const token = await AsyncStorage.getItem('authToken');
-          const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-          const data = await response.json();
-          if (Array.isArray(data)) {
-            setTasks(data);
+        const state = await NetInfo.fetch();
+        const token = await AsyncStorage.getItem('authToken');
+  
+        if (state.isConnected) {
+          console.log("Internet is connected. Fetching project tasks from backend...");
+          try {
+            const response = await fetch(`http://${ipAddr}:5000/getProjectTasks?projectID=${params.project_id}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+            });
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              setTasks(data);
+              await AsyncStorage.setItem(`tasks_${params.project_id}`, JSON.stringify(data));
+              console.log("Project tasks fetched and stored locally.");
+            }
+          } catch (error) {
+            console.error("Error fetching project tasks:", error);
           }
-        } catch (error) {
-          console.error("Error fetching project tasks:", error);
+        } else {
+          console.log("No internet connection. Trying to load tasks from cache...");
+          try {
+            const cached = await AsyncStorage.getItem(`tasks_${params.project_id}`);
+            console.log(cached)
+            
+
+            if (cached) {
+              const tasks = JSON.parse(cached);
+              setTasks(tasks);
+              console.log("Current taskId:", taskId);
+              console.log("Filtered subtasks:", tasks.filter((task: any) => String(task.parent_task_id) === String(taskId)));
+              console.log("Project tasks loaded from cache.");
+            } else {
+              console.warn("No cached tasks found.");
+              setTasks([]);
+            }
+          } catch (error) {
+            console.error("Error loading tasks from cache:", error);
+          }
         }
       };
-
+  
       fetchProjectTasks();
     }, [params.project_id])
   );
+  
+  const sendMessage = () => {
+    if (newMessage.trim() === '') return;
 
-  async function handleCheckboxPress(taskId: number, completed: boolean) {
-    try {
-      const token = await AsyncStorage.getItem('authToken');
-
-      const updateTaskAndSubtasks = async (taskId: number, completed: boolean) => {
-        const response = await fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            task_id: taskId,
-            completed: completed,
-          }),
-        });
-      
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Server error: ${errorText}`);
-        }
-      
-        if (completed) {
-          const subtasks = tasks.filter((t) => t.parent_task_id === taskId);
-          for (const subtask of subtasks) {
-            await updateTaskAndSubtasks(subtask.id, completed);
-          }
-        } else {
-          const task = tasks.find((t) => t.id === taskId);
-          if (task && task.parent_task_id !== null) {
-            await updateTaskAndSubtasks(task.parent_task_id, completed);
-          }
-        }
-      };
-      
-      
-
-      await updateTaskAndSubtasks(taskId, completed);
-
-      setTasks((prevTasks) =>
-        prevTasks.map((task) => {
-          if (task.id === taskId) {
-            return { ...task, completed: completed };
-          }
-          if (completed && task.parent_task_id === taskId) {
-            return { ...task, completed: completed };
-          }
-          if (!completed && task.id === task.parent_task_id) {
-            return { ...task, completed: completed };
-          }
-          return task;
-        })
-      );
-      
-      
-
-    } catch (error) {
-      console.error('Error toggling task status:', error);
-    }
+    socket.emit('send_message', {
+      sender_id: 50,
+      team_id: params.team_id,
+      content: newMessage,
+    });
   }
+
+async function handleCheckboxPress(taskId: number, completed: boolean, name: String) {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    const state = await NetInfo.fetch();
+
+    const key = `tasks_${params.project_id}`;
+    const stored = await AsyncStorage.getItem(key);
+    const parsedTasks = stored ? JSON.parse(stored) : [];
+
+    const updatedTasks = parsedTasks.map((task: any) =>
+      task.id === taskId ? { ...task, completed } : task
+    );
+
+
+
+    if (state.isConnected) {
+      const response = await fetch(`http://${ipAddr}:5000/modifyTaskStatus`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          task_id: taskId,
+          completed,
+        }),
+      });
+
+      if (!response.ok) {
+        if(response.status == 403){
+            Alert.alert('Error', 'You don’t have permission for that.');
+        }
+        const errorText = await response.text();
+        throw new Error(`Server error: ${errorText}`);
+      }
+      else{
+        await AsyncStorage.setItem(key, JSON.stringify(updatedTasks));
+        setTasks(updatedTasks);
+         setNewMessage(`Changed status of task: ${name} to ${completed}`);
+        sendMessage();
+      }
+     
+    } else {
+      addToQueue({
+        url: `http://${ipAddr}:5000/modifyTaskStatus`,
+        method: 'PUT',
+        body: {
+          task_id: taskId,
+          completed,
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Alert.alert('Offline Mode', 'Task status updated locally and will sync when online.');
+      setTasks(updatedTasks);
+      await AsyncStorage.setItem(key, JSON.stringify(updatedTasks));
+
+    }
+  } catch (error) {
+    console.error('Error toggling task status:', error);
+  }
+}
+
+
 
   const TaskItem = ({ task }: { task: { id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean; parent_task_id: number } }) => {
     return (
@@ -144,7 +232,7 @@ const TaskScreen = () => {
       >
         <TouchableOpacity
           style={[styles.checkbox, task.completed && { backgroundColor: theme.card }]}
-          onPress={async () => await handleCheckboxPress(task.id, !task.completed)}
+          onPress={async () => await handleCheckboxPress(task.id, !task.completed, task.name)}
         >
           {task.completed && <Ionicons name="checkmark" size={16} color="white" />}
         </TouchableOpacity>
@@ -173,7 +261,7 @@ const TaskScreen = () => {
         body: JSON.stringify({
           task_id: taskId,
           assigned_to: assignedTo,
-        }),
+        }),  
       });
 
       if (!response.ok) {
@@ -189,12 +277,64 @@ const TaskScreen = () => {
         )
       );
 
-      const assignedMember = members.find((member) => member.user_id === assignedTo);
-      setAssignedMember(assignedMember ? assignedMember.username : '--');
+      const assignedMber = members.find((member) => member.user_id === assignedTo);
+      setAssignedMember(assignedMber ? assignedMber.username : '--');
+
     } catch (error) {
       console.error('Error modifying task assignment:', error);
     }
   }
+
+  type TaskType = {
+    id: number;
+    name: string;
+    description: string;
+    assigned_to: number;
+    deadline: Date;
+    completed: boolean; 
+    parent_task_id: number;
+  };
+  if (isTablet) {
+    if (isLoading || assignedMember === null || !mainTask) {
+      return (
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.background }}>
+          <Text style={{ color: theme.text }}>Loading...</Text>
+        </SafeAreaView>
+      );
+    }
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
+        <TopBar />
+        <TabletTaskScreen 
+          task={mainTask}
+          subtasks={tasks.filter(task => String(task.parent_task_id) === String(taskId))}
+          assignedMember={assignedMember}
+          onAssignPress={() => setShowRoleOptions({ [String(params.task_assigned_to)]: true })}
+          onToggleTask={handleCheckboxPress}
+          onSubtaskPress={(task: TaskType) => {
+            
+            router.push({
+              pathname: '/inApp/taskScreen',
+              params: { ...params, task_id: task.id, task_name: task.name, task_description: task.description, task_assigned_to: task.assigned_to, task_deadline: task.deadline ? task.deadline.toString() : '', task_completed: task.completed.toString() }
+            });
+          }}
+          onCreateSubtask={() => router.push({
+            pathname: '/inApp/createTaskScreen',
+            params: { project_id: params.project_id, team_id: params.team_id, parent_id: taskId }
+          })}
+          showAssignmentModal={showRoleOptions[String(params.task_assigned_to)]}
+          members={members}
+          onAssignTo={modifyTaskAssignedTo}
+          onCloseModal={() => setShowRoleOptions({})}
+          userRole={userRole}
+          userId={Number(params.user_id)}
+          taskAssignedTo={Number(params.task_assigned_to)}
+        />
+        <BottomBar />
+      </SafeAreaView>
+    );
+  }
+  
   
 
   return (
@@ -269,7 +409,7 @@ const TaskScreen = () => {
     </TouchableOpacity>
     </View>
     <FlatList
-      data={tasks.filter(task => task.parent_task_id === taskId)}
+      data={tasks.filter(task => String(task.parent_task_id) === String(taskId))}
       keyExtractor={item => item.id.toString()}
       renderItem={({ item }) => <TaskItem task={item} />}
       contentContainerStyle={{ padding: 16 }}
@@ -284,7 +424,7 @@ const TaskScreen = () => {
         ]}
         onPress={async () => {
           if (mainTask) {
-            await handleCheckboxPress(mainTask.id, !mainTask.completed);
+            await handleCheckboxPress(mainTask.id, !mainTask.completed, mainTask.name);
           }
         }}
       >

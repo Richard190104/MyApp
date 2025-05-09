@@ -5,16 +5,19 @@ import { MaterialIcons } from '@expo/vector-icons';
 import ColorPicker, { Panel1, Swatches, Preview, OpacitySlider, HueSlider } from 'reanimated-color-picker';
 import TopBar from '@/components/topBar';
 import BottomBar from '@/components/bottomBar';
+import { Dimensions } from 'react-native';
+import ThemesManagementTablet from '../tabletViews/TabletThemesManagement';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { defaultLightTheme, defaultDarkTheme, Theme } from '@/components/ThemeContext';
+
 export default function ThemesManagement() {
+  const isTablet = Dimensions.get('window').width >= 768; 
   const { theme, toggleTheme, setCustomTheme } = useTheme();
   const [customTheme, setLocalCustomTheme] = useState(theme);
   const [selectedColor, setSelectedColor] = useState<string>(theme.primary);
+  const [isCustomThemeActive, setIsCustomThemeActive] = useState(false);
 
   const applyCustomColor = (field: keyof typeof customTheme) => {
-    if (!selectedColor.startsWith('#') || selectedColor.length !== 7) {
-        console.error('Invalid color:', selectedColor);
-        return;
-      }
     
       const updatedTheme = {
         ...customTheme,
@@ -30,12 +33,29 @@ export default function ThemesManagement() {
   const onSelectColor = ({ hex }: { hex: string }) => {
     setSelectedColor(hex);
   };
+
+  function toggle() {
+    toggleTheme();
+    if(theme.mode == 'light'){
+      setLocalCustomTheme(defaultDarkTheme);
+
+    }
+    else{
+      setLocalCustomTheme(defaultLightTheme);
+
+    }
+
+  }
+
+  if (isTablet) {
+    return <ThemesManagementTablet />;
+  }
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <TopBar />
 
       <ScrollView contentContainerStyle={[styles.content, {paddingBottom: 100}]}>
-      <TouchableOpacity style={[styles.mainButton, { backgroundColor: theme.card }]} onPress={toggleTheme}>
+      <TouchableOpacity style={[styles.mainButton, { backgroundColor: theme.card }]} onPress={toggle}>
           <Text style={[styles.buttonText, {color: theme.text}]}>Toggle Light/Dark</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text }]}>Customize Theme Colors</Text>

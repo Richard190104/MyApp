@@ -15,6 +15,7 @@ const TabletProjectTasks = ({
   userId,
   onModifyTaskStatus,
   projectID,
+  teamID,
 }: {
   teamName: string;
   projectName: string;
@@ -23,8 +24,9 @@ const TabletProjectTasks = ({
   userId: number;
   onModifyTaskStatus: (task: any) => void;
   projectID: string;
+  teamID: number;
 }) => {
-    
+  
   const { theme } = useTheme();
   const TaskItem = ({ task }: { task: any }) => {
     return (
@@ -35,12 +37,12 @@ const TabletProjectTasks = ({
             params: {
               team_name: teamName,
               project_id: projectID,
-              team_id: task.team_id?.toString(),
+              team_id: teamID?.toString(),
               user_id: userId.toString(),
               task_id: task.id.toString(),
               task_name: task.name,
               task_description: task.description,
-              task_assigned_to: task.assigned_to.toString(),
+              task_assigned_to: task.assigned_to ? task.assigned_to.toString() : '--',
               task_deadline: task.deadline ? task.deadline.toString() : '',
               task_completed: task.completed.toString(),
             },
@@ -71,10 +73,20 @@ const TabletProjectTasks = ({
         <View style={[styles.progressBarContainer, { backgroundColor: theme.card }]}>
           <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: theme.primary }]} />
         </View>
+         
         <Text style={[styles.progressText, { color: theme.text }]}>{progress.toFixed(0)}%</Text>
       </View>
 
       <View style={styles.columnRight}>
+      <View style={styles.headerRow}>
+        
+        <TouchableOpacity
+            onPress={() => router.push({ pathname: '/inApp/createTaskScreen', params: { project_id: projectID, team_id: teamID } })}
+            style={[styles.addButton, { backgroundColor: theme.primary }]}
+        >
+            <Ionicons name="add" size={24} color="white" />
+        </TouchableOpacity>
+        </View>
         <FlatList
           data={tasks.filter(t => t.parent_task_id === null)}
           keyExtractor={item => item.id.toString()}
@@ -159,6 +171,22 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
   },
+  headerRow: {
+    width: "90%",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+},
+addButton: {
+    padding: 10,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+},
 });
 
 export default TabletProjectTasks;

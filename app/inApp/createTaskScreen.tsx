@@ -4,14 +4,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomBar from '@/components/bottomBar';
 import TopBar from '@/components/topBar';
 import { router, useLocalSearchParams, useRouter } from 'expo-router';
-import { getTeamMembers, getUserId } from '@/components/getUser';
+import {  getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import DropDownPicker from 'react-native-dropdown-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '@/components/ThemeContext';
+import { Dimensions } from 'react-native';
+import CreateProjectScreenTablet from '../tabletViews/TabletCreateTask';
+import { addToQueue, getQueue } from '@/components/queue';
+import NetInfo from '@react-native-community/netinfo';
 
 export default function CreateProjectScreen() {
   const params = useLocalSearchParams();
+  const isTablet = Dimensions.get('window').width >= 768;
   const [taskName, setTaskName] = useState('');
   const [deadline, setdeadline] = useState('');
   const [description, setDescription] = useState('');
@@ -22,60 +27,75 @@ export default function CreateProjectScreen() {
     name: false,
     description: false,
   });
-  const [loading, setLoading] = useState(false); // New loading state
+  const [loading, setLoading] = useState(false); 
   const { theme, toggleTheme } = useTheme();
-
+  console.log(params.parent_id)
   useEffect(() => {
     (async () => {
       if (typeof params.team_id === 'string') {
-        const members = await getTeamMembers(parseInt(params.team_id, 10));
-        if (Array.isArray(members)) {
-          setItems(
-            members.map((member) => ({
-              label: `${member.username}`,
-              value: member.username,
-              id: member.user_id,
-            }))
-          );
+        const cached = await AsyncStorage.getItem(`teamMembers_${params.team_id}`);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          const members = parsed;
+          if (Array.isArray(members)) {
+            setItems(
+              members.map((member) => ({
+                label: `${member.username}`,
+                value: member.username,
+                id: member.user_id,
+              }))
+            );
+          } else {
+            console.error('Invalid team members data:', members);
+          }
+          console.log("Team members loaded from cache.");
         } else {
-          console.error('Invalid team members data:', members);
+          console.warn("No cached team members found.");
         }
+
       }
     })();
   }, []);
 
-  const handleCreateTask = async () => {
-    setLoading(true); 
-    const userID = await getUserId();
-    let assignedToId = items.find(item => item.label === assign)?.id;
-    const nameEmpty = !taskName.trim();
-    const descEmpty = !description.trim();
-    const deadlineEmpty = !deadline.trim();
-    const token = await AsyncStorage.getItem('authToken');
-    if (nameEmpty || descEmpty || deadlineEmpty || !userID) {
-      setErrors({
-        name: nameEmpty,
-        description: descEmpty,
-      });
-      setLoading(false); 
-      return;
-    }
+const handleCreateTask = async () => {
+  setLoading(true); 
+  const userID = await getUserId();
+  const assignedToId = items.find(item => item.label === assign)?.id;
+  const nameEmpty = !taskName.trim();
+  const descEmpty = !description.trim();
+  const deadlineEmpty = !deadline.trim();
+  const token = await AsyncStorage.getItem('authToken');
 
+  if (nameEmpty || descEmpty || deadlineEmpty || !userID) {
+    setErrors({
+      name: nameEmpty,
+      description: descEmpty,
+    });
+    setLoading(false); 
+    return;
+  }
+
+  const newTask = {
+    id: `local-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`,
+    name: taskName,
+    deadline,
+    description,
+    assign: assignedToId,
+    project_id: params.project_id,
+    parent_task_id: params.parent_id || null,
+    completed: false
+  };
+  const state = await NetInfo.fetch();
+
+  if (state.isConnected) {
     try {
       const response = await fetch(`http://${ipAddr}:5000/createTask`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: taskName,
-          deadline: deadline,
-          description: description,
-          assign: assignedToId,
-          project_id: params.project_id,
-          parent_task_id: params.parent_id || null,
-        }),
+        body: JSON.stringify(newTask),
       });
 
       const data = await response.json();
@@ -83,16 +103,7 @@ export default function CreateProjectScreen() {
       if (response.ok) {
         const existing = await AsyncStorage.getItem('tasks');
         const existingTasks = existing ? JSON.parse(existing) : [];
-        const newTask = {
-          name: taskName,
-          deadline: deadline,
-          description: description,
-          assign: assignedToId,
-          project_id: params.project_id,
-          parent_task_id: null,
-        };
-        await AsyncStorage.setItem('tasks', JSON.stringify([...existingTasks, newTask]));
-
+        await AsyncStorage.setItem(`tasks_${params.project_id}`, JSON.stringify([...existingTasks, newTask]));
         setTimeout(() => {
           setLoading(false); 
           router.back();
@@ -100,20 +111,37 @@ export default function CreateProjectScreen() {
       } else if (response.status === 403) {
         Alert.alert('Error', 'You don’t have permission for that.');
         setLoading(false);
-
       } else if (response.status === 401) {
-        setLoading(false);
         Alert.alert('Error', 'We couldn’t authenticate you.');
-      } else {
         setLoading(false);
+      } else {
         Alert.alert('Error', data.message || 'Failed to create task.');
+        setLoading(false);
       }
     } catch (error) {
       Alert.alert('Error', 'Something went wrong!');
       console.error(error);
       setLoading(false);
-    } 
-  };
+    }
+  } else {
+    const key = `tasks_${params.project_id}`;
+    const existing = await AsyncStorage.getItem(key);
+    const existingTasks = existing ? JSON.parse(existing) : [];
+    await AsyncStorage.setItem(key, JSON.stringify([...existingTasks, newTask]));
+    addToQueue({
+      url: `http://${ipAddr}:5000/createTask`,
+      method: 'POST',
+      body: newTask,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    console.log(getQueue());
+    Alert.alert('Offline Mode', 'Task saved locally and will sync when online.');
+    setLoading(false);
+    router.back();
+  }
+};
 
   if(loading){
     return (
@@ -123,7 +151,9 @@ export default function CreateProjectScreen() {
     </View>
     )
   }
-
+  if (isTablet) {
+    return <CreateProjectScreenTablet />;
+  }
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
      

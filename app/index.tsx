@@ -8,7 +8,8 @@ import {ipAddr} from "../components/backendip";
 import { useTheme } from '@/components/ThemeContext';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Dimensions } from 'react-native';
-import TabletIndex from "./tabletViews/tabletindex"; 
+import TabletIndex from "./tabletViews/tabletindex";
+import { startNetworkListener } from '@/components/queue';  
 const isTablet = Dimensions.get('window').width >= 768;
 
 const App = () => {
@@ -16,12 +17,17 @@ const App = () => {
   const router = useRouter();
   const { theme } = useTheme();
   
+
+  useEffect(() => {
+    startNetworkListener();
+  }, []);
+
   useEffect(() => {
     navigation.setOptions({
       gestureEnabled: false, 
     });
   }, [navigation]);
-async function Login(email: string, password: string) {
+  async function Login(email: string, password: string) {
        
         try {
             const response = await fetch(`http://${ipAddr}:5000/login`, {

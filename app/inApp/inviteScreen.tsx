@@ -9,9 +9,13 @@ import { getUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/components/ThemeContext';
+import InviteScreenTablet from '../tabletViews/TabletChatScreen';
+import { Dimensions } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 
 export default function InviteScreen() {
     const router = useRouter();
+    const isTablet = Dimensions.get('window').width >= 768;
     const { theme, toggleTheme } = useTheme();
     const insets = useSafeAreaInsets();
     const [invites, setInvites] = useState<
@@ -22,7 +26,14 @@ export default function InviteScreen() {
         { team_id: number; team_name: string}[]>([]);
 
     useEffect(() => {
+       
+
         const fetchInvites = async () => {
+             const state = await NetInfo.fetch();
+            if (!state.isConnected) {
+            console.log("Offline – skipping invitation fetch");
+            return;
+            }
             const userId = await getUserId();
             if (!userId) return;
 
@@ -52,12 +63,17 @@ export default function InviteScreen() {
             }
         };
     
-        const fetchUserAndTeams = async () => {
-            const id = await getUserId();
-            const token = await AsyncStorage.getItem('authToken');
 
-            if (id !== null && token !== null) {
+        const fetchUserAndTeams = async () => {
+        const id = await getUserId();
+        const token = await AsyncStorage.getItem('authToken');
+
+        if (id !== null && token !== null) {
             setUser(id);
+            const teamsKey = `teams_${id}`;
+            const netState = await NetInfo.fetch();
+
+            if (netState.isConnected) {
             try {
                 const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${id}`, {
                 headers: {
@@ -66,19 +82,40 @@ export default function InviteScreen() {
                 });
                 const data = await response.json();
                 if (Array.isArray(data)) {
-                setTeams(data.map((team: { id: number; name: string }) => ({
+                const teams = data.map((team: { id: number; name: string }) => ({
                     team_id: team.id,
                     team_name: team.name,
-                })));
-
+                }));
+                setTeams(teams);
+                await AsyncStorage.setItem(teamsKey, JSON.stringify(teams));
                 }
             } catch (error) {
                 console.error("Error fetching team names:", error);
             }
             } else {
-            console.warn("User ID or token was null");
+            console.warn("No internet connection. Loading teams from cache.");
+            try {
+                const cached = await AsyncStorage.getItem(teamsKey);
+                if (cached) {
+                    console.log(cached)
+                const teams = JSON.parse(cached);
+                  const mapped = teams.map((team: any) => ({
+                    team_id: team.id,
+                    team_name: team.name,
+                }));
+                setTeams(mapped);
+                } else {
+                console.warn("No cached teams found.");
+                }
+            } catch (error) {
+                console.error("Error loading teams from cache:", error);
             }
+            }
+        } else {
+            console.warn("User ID or token was null");
+        }
         };
+
 
         fetchUserAndTeams();
 
@@ -142,7 +179,11 @@ export default function InviteScreen() {
             console.error('Error declining invite:', error);
         }
     };
- 
+    
+    if(isTablet){
+        return <InviteScreenTablet />;
+    }
+
     return (
         <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
             <TopBar />
@@ -184,7 +225,7 @@ export default function InviteScreen() {
                     data={teams}
                     style={{ width: '100%' }}
                     contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
-                    keyExtractor={(item) => item.team_id.toString()}
+                    keyExtractor={(item) => String(item?.team_id ?? Math.random().toString())}
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={[styles.chatScreen, { backgroundColor: theme.card }]}

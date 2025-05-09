@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-const defaultLightTheme = {
+export const defaultLightTheme = {
   mode: 'light',
   background: '#ffffff',
   text: '#000000',
@@ -16,7 +16,7 @@ const defaultLightTheme = {
   buttonTextColor: '#ffffff',
 };
 
-const defaultDarkTheme = {
+export const defaultDarkTheme = {
   mode: 'dark',
   background: '#121212',
   text: '#e0e0e0',
@@ -29,7 +29,7 @@ const defaultDarkTheme = {
   buttonTextColor: '#ffffff',
 };
 
-type Theme = typeof defaultLightTheme;
+export type Theme = typeof defaultLightTheme;
 
 const ThemeContext = createContext<{
   theme: Theme;
@@ -54,11 +54,11 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
     loadTheme();
   }, []);
 
-  const toggleTheme = async () => {
-    const newTheme = theme.mode === 'light' ? defaultDarkTheme : defaultLightTheme;
-    setTheme(newTheme);
-    await AsyncStorage.setItem('customTheme', JSON.stringify(newTheme));
-  };
+ const toggleTheme = async () => {
+  const newTheme = theme.mode === 'light' ? defaultDarkTheme : defaultLightTheme;
+  setTheme(newTheme);
+  await AsyncStorage.removeItem('customTheme'); 
+};
 
   const setCustomTheme = (customTheme: Theme) => {
     if (customTheme.background && customTheme.text && customTheme.primary) {

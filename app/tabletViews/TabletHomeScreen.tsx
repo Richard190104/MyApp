@@ -37,7 +37,7 @@ const TabletTeamView = () => {
         const data = await res.json();
         if (Array.isArray(data)) {
           setTeams(data);
-          if (data.length > 0) setSelectedTeam(data[0]); 
+           
         }
       } catch (err) {
         console.error('Failed to fetch teams:', err);
@@ -100,9 +100,12 @@ const TabletTeamView = () => {
             user={userId?.toString()}
           />
         ) : (
-          <Text style={[styles.placeholderText, { color: theme.text }]}>
+          <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Text style={[styles.placeholderText, { color: theme.text }]}>
             Select a team to view details
-          </Text>
+            </Text>
+          </SafeAreaView>
+          
         )}
       </View>
     </View>

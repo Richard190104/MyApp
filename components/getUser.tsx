@@ -18,8 +18,7 @@ export const storeUser = async (user: { id: number; username: string; email: str
     await AsyncStorage.multiSet([
       ['userId', user.id.toString()],
       ['userName', user.username],
-      ['userEmail', user.email],
-      ['userProfilePicture', user.profile_picture ? user.profile_picture : '']
+      ['userEmail', user.email]
     ]);
   } catch (e) {
     console.error('Error saving user data', e);
@@ -31,8 +30,7 @@ export const getUser = async () => {
     const [id, username, email, profile_picture] = await AsyncStorage.multiGet([
       'userId',
       'userName',
-      'userEmail',
-      'userProfilePicture'
+      'userEmail'
     ]);
 
     if (id[1] && username[1] && email[1]) {
@@ -40,7 +38,6 @@ export const getUser = async () => {
         id: parseInt(id[1], 10),
         username: username[1],
         email: email[1],
-        profile_picture: profile_picture[1] ? profile_picture[1] : null,
       };
     }
 
@@ -63,10 +60,9 @@ export const getUserId = async () => {
 
 export const logout = async () => {
   try {
+    await AsyncStorage.removeItem('authToken');
     const authToken = await AsyncStorage.getItem('authToken');
-    // const fcmToken = await messaging().getToken();
-    const fcmToken = "ss";
-    console.log('FCM token:', fcmToken);
+    const fcmToken = "s" //await messaging().getToken();
     if (authToken) {
       await fetch(`http://${ipAddr}:5000/device_token`, {
         method: 'PUT',
@@ -87,22 +83,4 @@ export const logout = async () => {
 };
 
 
-export const storeTeamMembers = async (teamMembers: any[], team_id: number) => {
-  try {
-    const jsonValue = JSON.stringify(teamMembers);
-    await AsyncStorage.setItem(`teamMembers_${team_id}`, jsonValue);
-  } catch (e) {
-    console.error('Error saving team members', e);
-  }
-}
-
-export const getTeamMembers = async (team_id: number) => {
-  try {
-    const jsonValue = await AsyncStorage.getItem(`teamMembers_${team_id}`);
-    return jsonValue != null ? JSON.parse(jsonValue) : null;
-  } catch (e) {
-    console.error('Error reading team members', e);
-    return null;
-  }
-}
 

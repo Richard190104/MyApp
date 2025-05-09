@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import LoadingOverlay from '../../components/LoadingOverlay';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { Dimensions } from 'react-native';
 import TabletLogin from '../tabletViews/TabletLogin';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const isTablet = Dimensions.get('window').width >= 768;
 
 export default function LoginScreen() {
@@ -70,10 +71,30 @@ export default function LoginScreen() {
         return false;
       }
     }
-  
+
+    useEffect(() => {
+      const checkAuth = async () => {
+        const token = await AsyncStorage.getItem('authToken');
+        if (token) {
+          setIsLoading(true);
+
+          const userId = await getUserId();
+          if (userId) {
+            router.replace('/inApp/homeScreen');
+          }
+          setIsLoading(false);
+
+        }
+      };
+    
+      checkAuth();
+    }, []);
+    
   async function Login() {
     setIsLoading(true);
+    console.log("tokenik")
     try {
+     
       const response = await fetch(`http://${ipAddr}:5000/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,17 +115,16 @@ export default function LoginScreen() {
         // const permissionGranted = await requestUserPermission();
         // if (permissionGranted) {
         // const fcmToken = await messaging().getToken();
-        // console.log('FCM Token:', fcmToken);
         // if (fcmToken) {
         //   await registerDeviceToken(fcmToken, data.token);
+        //    router.replace('/inApp/homeScreen');
         // }
 
         // } else {
         //   console.warn('Push notification permission not granted');
 
         // }
-        router.replace('/inApp/homeScreen');
-  
+        router.replace('/inApp/homeScreen')
       } else {
         Alert.alert('Invalid email or password');
       }

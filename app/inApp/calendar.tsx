@@ -14,6 +14,8 @@ import { ipAddr } from "@/components/backendip";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Calendar from 'expo-calendar';
 import { Platform, Linking } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
+
 const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
@@ -39,40 +41,65 @@ export default function CalendarScreen() {
 
     const getTasks = async (userId: number) => {
       try {
-      const token = await AsyncStorage.getItem('authToken');
-
-      const response = await fetch(`http://${ipAddr}:5000/getUserTasks?user_id=${userId}`, {
-        method: 'GET',
-        headers: {
-        'Authorization': `Bearer ${token}`, 
-        'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error fetching tasks: ${response.statusText}`);
-      }
-      const tasks = await response.json();
-      const taskMap: Record<string, Task> = {};
-
-      tasks.forEach((task: any) => {
-        if (task.deadline) {
-        const dateKey = task.deadline.split('T')[0]; 
-        taskMap[dateKey] = {
-          name: task.task_name,
-          description: task.task_description,
-          completed: task.task_completed,
-          assignedTo: task.task_assigned_to,
-          deadline: task.deadline,
-          teamName: task.team_name,
-        };
+        const token = await AsyncStorage.getItem('authToken');
+        const netState = await NetInfo.fetch();
+    
+        if (netState.isConnected) {
+          console.log("Internet is connected. Fetching tasks from backend...");
+          const response = await fetch(`http://${ipAddr}:5000/getUserTasks?user_id=${userId}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+    
+          if (!response.ok) {
+            throw new Error(`Error fetching tasks: ${response.statusText}`);
+          }
+    
+          const tasks = await response.json();
+    
+          await AsyncStorage.setItem(`tasks_user_${userId}`, JSON.stringify(tasks));
+          console.log("Tasks fetched and stored locally")
+          buildTaskMap(tasks);
+        } else {
+          console.log("No internet connection. Trying to load tasks from cache...");
+          const cached = await AsyncStorage.getItem(`tasks_user_${userId}`);
+          if (cached) {
+            const tasks = JSON.parse(cached);
+            console.log("Tasks loaded from cache.");
+            buildTaskMap(tasks);
+          } else {
+            console.warn("No cached tasks found.");
+            setTaskMap({});
+          }
         }
-      });
-      setTaskMap(taskMap);
       } catch (error) {
-      console.error(error);
+        console.error("Chyba pri získavaní úloh:", error);
       }
     };
+    
+    const buildTaskMap = (tasks: any[]) => {
+      const taskMap: Record<string, Task> = {};
+    
+      tasks.forEach((task: any) => {
+        if (task.deadline) {
+          const dateKey = task.deadline.split('T')[0];
+          taskMap[dateKey] = {
+            name: task.task_name,
+            description: task.task_description,
+            completed: task.task_completed,
+            assignedTo: task.task_assigned_to,
+            deadline: task.deadline,
+            teamName: task.team_name,
+          };
+        }
+      });
+    
+      setTaskMap(taskMap);
+    };
+    
     
     useEffect(() => {
       (async () => {

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import io from 'socket.io-client';
@@ -19,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomBar from '@/components/bottomBar';
 import { useTheme } from '@/components/ThemeContext';
+import NetInfo from '@react-native-community/netinfo';
 
 const socket = io(`http://${ipAddr}:5000`);
 
@@ -38,7 +40,12 @@ const ChatScreen = () => {
 
   const fetchMessages = async (scrollToBottom = false) => {
     if (loadingMore || !hasMore) return;
-
+    const state = await NetInfo.fetch();
+    if(!state.isConnected){
+      return(
+        <Text>Failed to load messages. Try connecting to the internet</Text>
+      )
+    }
     setLoadingMore(true);
 
     try {
@@ -86,7 +93,12 @@ const ChatScreen = () => {
     };
   }, []);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
+    const state = await NetInfo.fetch();
+    if(!state.isConnected){
+      Alert.alert("error", "No internet connection")
+      return;
+    }
     if (newMessage.trim() === '') return;
 
     socket.emit('send_message', {
@@ -121,6 +133,7 @@ const ChatScreen = () => {
             }
           }}
         >
+
           {loadingMore && (
             <ActivityIndicator size="small" color={theme.primary} style={{ marginBottom: 10 }} />
           )}

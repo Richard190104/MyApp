@@ -48,8 +48,8 @@ export default function TopBar() {
                     <Text style={[styles.mainText, { color: theme.text }]}>Options</Text>
                     <View style={{ width: '100%', display: 'flex', alignItems: 'center', height: '100%', justifyContent: 'center', transform: [{ translateY: -120 }] }}>
                         
-                        <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => { router.push('/settingsScreens/profile') }}>
-                            <Text style={[styles.ItemText, { color: theme.text }]}>Profile</Text>
+                    <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => { router.push('/settingsScreens/profileScreen') }}>
+                            <Text style={[styles.ItemText, { color: theme.text }]}>Manage Profile</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]}>
@@ -60,9 +60,7 @@ export default function TopBar() {
                             <Text style={[styles.ItemText, { color: theme.text }]}>Dark Mode</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => { router.push('/settingsScreens/profileScreen') }}>
-                            <Text style={[styles.ItemText, { color: theme.text }]}>Manage Profile</Text>
-                        </TouchableOpacity>
+                        
 
                         <View style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => { logout(); router.replace('/') }}>

@@ -9,10 +9,13 @@ import * as ImagePicker from 'expo-image-picker';
 import BottomBar from '@/components/bottomBar';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/components/ThemeContext';
-
+import { Dimensions } from 'react-native';
+import ProfileScreenTablet from '../tabletViews/TabletManageProfile';
+import NetInfo from '@react-native-community/netinfo';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const isTablet = Dimensions.get('window').width >= 768;
     const { theme } = useTheme();
     const [user, setUser] = React.useState<{id: number; username: string; email:string; profile_picture: string | null }>({ id: 0, username: '', email: '', profile_picture: null });
     const [teams, setTeams] = useState<{ id: number; name: string; creator_id: number }[]>([]);
@@ -20,30 +23,67 @@ export default function ProfileScreen() {
     const [code, setCode] = useState('');
     const [showResetPasswordView, setShowResetPasswordView] = useState(false);
     const [newPassword, setNewPassword] = useState('');
-    async function fetchUser() {
-        const data = await getUser();
-        if (data) {
-            setUser(data);
-        } 
-    }
 
+    async function fetchUser() {
+      const user_id = await AsyncStorage.getItem('userId');
+      const token = await AsyncStorage.getItem('authToken');
+      const state = await NetInfo.fetch();
+      if (state.isConnected) {
+        try {
+          const response = await fetch(`http://${ipAddr}:5000/getUserInfo?user_id=${user_id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const data = await response.json();
+          setUser(data);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      } else {
+        const data = await getUser();
+          if (data) {
+            setUser({ ...data, profile_picture: null });
+          }
+
+        
+      }
+     
+    }
+   
     const fetchUserAndTeams = async () => {
       const token = await AsyncStorage.getItem('authToken');
 
       if (user.id !== null && token !== null) {
-        try {
-            const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${user.id}`, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-            });
-            const data = await response.json();
-            if (Array.isArray(data)) {
-            setTeams(data);
-            }
-        } catch (error) {
-            console.error("Error fetching team names:", error);
-        }
+         const state = await NetInfo.fetch();
+                    if (state.isConnected) {
+                        console.log("Internet is connected. Fetching teams from backend...");
+                        try {
+                            const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${user.id}`, {
+                                headers: { Authorization: `Bearer ${token}` },
+                            });
+                            const data = await response.json();
+                            if (Array.isArray(data)) {
+                                setTeams(data);
+                                await AsyncStorage.setItem(`teams_${user.id}`, JSON.stringify(data));
+                                console.log("Teams fetched and stored locally.");
+                            } else {
+                                console.warn("Unexpected response:", data);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching teams from backend:", error);
+                        }
+                    } else {
+                        console.log("No internet connection. Trying to load teams from cache...");
+                        const cached = await AsyncStorage.getItem(`teams_${user.id}`);
+                        if (cached) {
+                            const parsed = JSON.parse(cached);
+                            setTeams(parsed);
+                            console.log("Teams loaded from cache.");
+                        } else {
+                            console.warn("No cached teams found.");
+                        }
+                    }
       } else {
       console.warn("User ID or token was null");
       }
@@ -230,6 +270,10 @@ export default function ProfileScreen() {
         console.error('Error verifying reset code:', error);
         alert('An error occurred while verifying the code.');
       }
+    }
+
+    if(isTablet) {
+      return <ProfileScreenTablet />;
     }
 
     return (

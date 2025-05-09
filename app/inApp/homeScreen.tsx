@@ -11,35 +11,82 @@ import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext'; 
 import { Dimensions } from 'react-native';
 import TabletHomeScreen from '../tabletViews/TabletHomeScreen';
+import NetInfo from '@react-native-community/netinfo';
+import { useLocalSearchParams } from 'expo-router';
+
 const isTablet = Dimensions.get('window').width >= 768;
-export default function HomeScreen() {
+export default function HomeScreen() {  
     const router = useRouter();
     const { theme, toggleTheme } = useTheme(); 
     const [user, setUser] = useState<number | null>(null);
     const [teams, setTeams] = useState<{ id: number; name: string; creator_id: number }[]>([]);
+    const localParams = useLocalSearchParams();
 
     useEffect(() => {
         const fetchUserAndTeams = async () => {
-            const id = await getUserId();
-            const token = await AsyncStorage.getItem('authToken');
-
-            if (id !== null && token !== null) {
-                setUser(id);
-                try {
-                    const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${id}`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    });
-                    const data = await response.json();
-                    if (Array.isArray(data)) {
-                        setTeams(data);
+            try {
+                const id = await getUserId();
+                const token = await AsyncStorage.getItem('authToken');
+        
+                if (id !== null && token !== null) {
+                    setUser(id); 
+        
+                    const state = await NetInfo.fetch();
+                    if (state.isConnected) {
+                        console.log("Internet is connected. Fetching teams from backend...");
+                        try {
+                            const response = await fetch(`http://${ipAddr}:5000/getTeams?userID=${id}`, {
+                                headers: { Authorization: `Bearer ${token}` },
+                            });
+                            const data = await response.json();
+                            if (Array.isArray(data)) {
+                                setTeams(data);
+                                await AsyncStorage.setItem(`teams_${id}`, JSON.stringify(data));
+                                console.log("Teams fetched and stored locally.");
+                                if (localParams?.onTeam === "1" && localParams?.team_name) {
+                                    const matchedTeam = data.find(
+                                      (team: { name: string }) => team.name === localParams.team_name
+                                    );
+                                    if (matchedTeam) {
+                                      router.replace({
+                                        pathname: './team',
+                                        params: {
+                                          team_id: matchedTeam.id.toString(),
+                                          team_name: matchedTeam.name,
+                                          team_creator_id: matchedTeam.creator_id,
+                                          usero: id.toString()
+                                        }
+                                      });
+                                    } else {
+                                      console.warn("Team with given name not found.");
+                                    }
+                                  }
+                            } else {
+                                console.warn("Unexpected response:", data);
+                            }
+                        } catch (error) {
+                            console.error("Error fetching teams from backend:", error);
+                        }
+                    } else {
+                        console.log("No internet connection. Trying to load teams from cache...");
+                        const cached = await AsyncStorage.getItem(`teams_${id}`);
+                        if (cached) {
+                            const parsed = JSON.parse(cached);
+                            setTeams(parsed);
+                            console.log("Teams loaded from cache.");
+                        } else {
+                            console.warn("No cached teams found.");
+                        }
                     }
-                } catch (error) {
-                    console.error("Error fetching team names:", error);
+        
+                } else {
+                    console.warn("User ID or token was null");
                 }
-            } else {
-                console.warn("User ID or token was null");
+            } catch (error) {
+                console.error("Unexpected error in fetchUserAndTeams:", error);
             }
         };
+        
 
         fetchUserAndTeams();
     }, []);

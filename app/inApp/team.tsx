@@ -6,16 +6,18 @@ import TopBar from "@/components/topBar";
 import { useEffect, useState } from "react";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { ipAddr } from "@/components/backendip";
-import { storeTeamMembers } from "@/components/getUser";
 import { useTheme } from '@/components/ThemeContext';
-import { useWindowDimensions } from 'react-native';
+import {Dimensions} from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 
 const TeamScreen = (props: any) => {
     const localParams = useLocalSearchParams();
+    const width = Dimensions.get('window').width
+
     const team_id = props?.team_id || localParams?.team_id;
     const team_name = props?.team_name || localParams?.team_name;
     const team_creator_id = props?.team_creator_id || localParams?.team_creator_id;
-    const usero = props?.usero || localParams?.user;
+    const [isLoading, setIsLoading] = useState(true);
 
     const [projects, setProjects] = useState<{ id: number; team_id: number; project_name: string; deadline: Date }[]>([]);
     const [user, setUser] = useState<number | null>(null);
@@ -25,104 +27,178 @@ const TeamScreen = (props: any) => {
     const [newMemberEmail,setNewMemberEmail] = useState("");
     const [showRoleOptions, setShowRoleOptions] = useState<{ [key: number]: boolean }>({});
     const { theme, toggleTheme } = useTheme();
-    
-    useEffect(() => {
-        const fetchUserAndTeams = async () => {
-            const token = await AsyncStorage.getItem('authToken');
-            console.log(team_id)
-            const storedUserId = await AsyncStorage.getItem('userId');
-            if (storedUserId) {
-              setUser(parseInt(storedUserId, 10));
-            } else {
-              console.warn('User ID not found in AsyncStorage');
-            }
-            
-            if (user !== null) {
-            try {
-                const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${team_id}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                });
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                setProjects(data);
-                }
-            } catch (error) {
-                console.error("Error fetching team names:", error);
-            }
-            } else {
-            console.warn("User ID was null");
-            }
-        };
 
-        const fetchTeamMembers = async () => {
-            try {
-            const token = await AsyncStorage.getItem('authToken');
-            const response = await fetch(`http://${ipAddr}:5000/getTeamMembers?teamID=${team_id}`, {
-                method: 'GET',
-                headers: {
+    useEffect(() => {
+      console.log(localParams.team_id)
+
+      const fetchUserAndTeams = async () => {
+        const state = await NetInfo.fetch();
+        const token = await AsyncStorage.getItem('authToken');
+        if(state.isConnected){
+          console.log("Internet is connected. Fetching projects from backend...");
+
+          try {
+            const response = await fetch(`http://${ipAddr}:5000/getProjects?teamID=${team_id}`, {
+              method: 'GET',
+              headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                },
+                'Content-Type': 'application/json',   
+              },
             });
             const data = await response.json();
             if (Array.isArray(data)) {
-                setTeamMembers(data);
-                const admins = data
+              setProjects(data);
+              await AsyncStorage.setItem(`projects_${team_id}`, JSON.stringify(data));
+
+            }
+            if (localParams?.onProject === "1" && localParams?.project_name) {
+              const matchedProject = data.find(
+                (project: any) => project.project_name === localParams.project_name
+              );
+              if (matchedProject) {
+                router.replace({
+                  pathname: '/inApp/projectscreen',
+                  params: {
+                    project_id: matchedProject.id.toString(),
+                    project_name: matchedProject.project_name,
+                    team_id: team_id,
+                    user_id: user,
+                    project_deadline: matchedProject.deadline.toString(),
+                    team_name: team_name,
+                  },
+                });
+              } else {
+                console.warn("Project with the given name not found.");
+              }
+            }
+          } catch (error) {
+            console.error("Error fetching team names:", error);
+
+          }
+        }
+        else{
+          console.log("No internet connection. Trying to load projects from cache...");
+          const cached = await AsyncStorage.getItem(`projects_${team_id}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            setProjects(parsed);
+            console.log(parsed)
+            console.log("Projects loaded from cache.");
+          } else {
+            console.warn("No cached projects found.");
+          }
+        }
+
+      };
+    
+      const fetchTeamMembers = async () => {
+        const state = await NetInfo.fetch();
+        if(state.isConnected){
+          console.log("Internet is connected. Fetching teams members from backend...");
+
+          try {
+            const token = await AsyncStorage.getItem('authToken');
+  
+            const response = await fetch(`http://${ipAddr}:5000/getTeamMembers?teamID=${team_id}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+            const data = await response.json();
+            if (Array.isArray(data)) {
+              setTeamMembers(data);
+              const membersWithoutPictures = data.map(member => {
+                const { profile_picture, ...rest } = member;
+                return rest;
+              });
+              await AsyncStorage.setItem(`teamMembers_${team_id}`, JSON.stringify(membersWithoutPictures));
+              const admins = data
                 .filter(member => member.role === 'admin' || member.role === 'owner')
                 .map(member => member.user_id);
-                setProjectAdmins(admins);
-                if (typeof team_id === "string") {
-                storeTeamMembers(data, parseInt(team_id));
-                }
+              setProjectAdmins(admins);
+              
+              
             }
-            } catch (error) {
+          } catch (error) {
             console.error("Error fetching team members:", error);
-            }
-        };
+          }
+        }
+        else{
+          console.log("No internet connection. Trying to load team members from cache...");
+          const cached = await AsyncStorage.getItem(`teamMembers_${team_id}`);
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            setTeamMembers(parsed);
+            const admins = parsed
+            .filter((member: { role: string; }) => member.role === 'admin' || member.role === 'owner')
+            .map((member: { user_id: any; }) => member.user_id);
+            setProjectAdmins(admins);
+            console.log("Team members loaded from cache.");
+          } else {
+            console.warn("No cached team members found.");
+          }
+        }
 
-        fetchTeamMembers();
-        fetchUserAndTeams();
-        
+      };
+    
+      (async () => {
+        const storedUserId = await AsyncStorage.getItem('userId');
+        setIsLoading(true);
+
+        if (storedUserId) {
+          const parsedUserId = parseInt(storedUserId, 10);
+          setUser(parsedUserId);
+          await fetchUserAndTeams();
+          await fetchTeamMembers();
+          
+        } else {
+          console.warn('User ID not found in AsyncStorage');
+        }
+        setIsLoading(false);
+      })();
+    
     }, [team_id]);
+    
 
     async function removeTeamMember(user_id: number) {
-        try {
-            const token = await AsyncStorage.getItem('authToken');
-            const response = await fetch(`http://${ipAddr}:5000/removeTeamMember`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                user_id: user_id,
-                team_id: team_id,
-            }), 
-            });
+        const state = await NetInfo.fetch();
+        if(!state.isConnected){
+            try {
+              const token = await AsyncStorage.getItem('authToken');
+              const response = await fetch(`http://${ipAddr}:5000/removeTeamMember`, {
+              method: 'DELETE',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                  user_id: user_id,
+                  team_id: team_id,
+              }), 
+              });
 
-            if (response.ok) {
-            alert("Team member removed successfully!");
-            setTeamMembers(prevMembers => prevMembers.filter(member => member.user_id !== user_id));
-            if (typeof team_id === "string") {
-                storeTeamMembers(teamMembers, parseInt(team_id, 10));
-            } else {
-                console.warn("Invalid team ID:", team_id);
+              if (response.ok) {
+              alert("Team member removed successfully!");
+              setTeamMembers(prevMembers => prevMembers.filter(member => member.user_id !== user_id));
+            
+              } else if (response.status === 403) {
+              alert("You don't have permission for that.");
+              } else if (response.status === 401) {
+              alert("We couldn't authenticate you.");
+              } else {
+              alert("Failed to remove team member");
+              }
+            } catch (error) {
+                console.error("Error removing team member:", error);
+                alert("Error removing team member");
             }
-            } else if (response.status === 403) {
-            alert("You don't have permission for that.");
-            } else if (response.status === 401) {
-            alert("We couldn't authenticate you.");
-            } else {
-            alert("Failed to remove team member");
-            }
-        } catch (error) {
-            console.error("Error removing team member:", error);
-            alert("Error removing team member");
+
         }
+       else{
+            alert("No internet connection. Cannot remove team member.");
+       }
     }
 
     async function SendInvite(email: string) {
@@ -190,10 +266,18 @@ const TeamScreen = (props: any) => {
             alert("Error updating user role.");
         }
     }
-
+   
+    if (isLoading) {
+      return (
+        <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background,flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ color: theme.text, fontSize: 18 }}>Loading team data...</Text>
+        </SafeAreaView>
+      );
+    }
+    
   return (
 <SafeAreaView style={[styles.MainContainer, { backgroundColor: theme.background }]}>
-{useWindowDimensions().width < 768 && <TopBar />}
+  {width < 768 && <TopBar />}
   <Text style={[styles.mainText, { color: theme.text }]}>{team_name}</Text>
 
   <View style={styles.headerRow}>
@@ -351,7 +435,7 @@ const TeamScreen = (props: any) => {
       )}
     </View>
   </ScrollView>
-  {useWindowDimensions().width < 768 && <BottomBar />}
+  {width < 768 && <BottomBar />}
 </SafeAreaView>
   );
 };
