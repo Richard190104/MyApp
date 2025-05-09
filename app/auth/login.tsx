@@ -15,7 +15,7 @@ import { getUserId, storeUser, storeUserId } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
 import LoadingOverlay from '../../components/LoadingOverlay';
-// import messaging from '@react-native-firebase/messaging';
+import messaging from '@react-native-firebase/messaging';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { Dimensions } from 'react-native';
 import TabletLogin from '../tabletViews/TabletLogin';
@@ -111,20 +111,19 @@ export default function LoginScreen() {
         };
         await storeUserId(data.userID, data.token);
         await storeUser(userInfo);
-  
-        // const permissionGranted = await requestUserPermission();
-        // if (permissionGranted) {
-        // const fcmToken = await messaging().getToken();
-        // if (fcmToken) {
-        //   await registerDeviceToken(fcmToken, data.token);
-        //    router.replace('/inApp/homeScreen');
-        // }
+        router.replace('/inApp/homeScreen');
+        const permissionGranted = await requestUserPermission();
+        if (permissionGranted) {
+        const fcmToken = await messaging().getToken();
+        if (fcmToken) {
+          await registerDeviceToken(fcmToken, data.token);
+           
+        }
 
-        // } else {
-        //   console.warn('Push notification permission not granted');
+        } else {
+          console.warn('Push notification permission not granted');
 
-        // }
-        router.replace('/inApp/homeScreen')
+        }
       } else {
         Alert.alert('Invalid email or password');
       }

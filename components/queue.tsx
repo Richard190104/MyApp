@@ -125,16 +125,13 @@ export const processQueue = async () => {
             const localId = body.id;
             const realId = data.task_id;
 
-            // Aktualizuj queued požiadavky
             queue = queue.map((req) => {
                 const newBody = { ...req.body };
 
-                // Ak task mal parent_task_id == localId, nastav nový
                 if (newBody.parent_task_id === localId) {
                 newBody.parent_task_id = realId;
                 }
 
-                // Nahrad id samotného tasku
                 if (newBody.id === localId) {
                 newBody.id = realId;
                 }
@@ -181,17 +178,28 @@ export const processQueue = async () => {
   clearQueue();
 };
 
+let hasSynced = false;
+
 export const startNetworkListener = () => {
   const unsubscribe = NetInfo.addEventListener(state => {
-    if (state.isConnected) {
-        console.log(getQueue())
+    if (state.isConnected && !hasSynced) {
+      hasSynced = true; // prevent repeat execution
+
+      const queue = getQueue();
+      if (queue.length === 0) return; // nothing to sync
+
+      console.log('Queue:', queue);
+
       Alert.alert(
         "Connection Restored",
         "You're back online. Do you want to sync your offline data?",
         [
           {
             text: "Cancel",
-            style: "cancel"
+            style: "cancel",
+            onPress: () => {
+              hasSynced = false; // allow syncing again if user cancels
+            }
           },
           {
             text: "Sync",
@@ -203,8 +211,12 @@ export const startNetworkListener = () => {
         ],
         { cancelable: true }
       );
+    }
 
-      unsubscribe();
+    if (!state.isConnected) {
+      hasSynced = false; // reset flag when going offline
     }
   });
+
+  return unsubscribe; // allow caller to clean up if needed
 };
