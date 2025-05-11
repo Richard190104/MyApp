@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import ButtonMain from '@/components/button';
-import { getUserId, storeUser, storeUserId } from '@/components/getUser';
+import { getUserId, storeUser, storeUserId, getUser } from '@/components/getUser';
 import { ipAddr } from '@/components/backendip';
 import { useTheme } from '@/components/ThemeContext';
 import LoadingOverlay from '../../components/LoadingOverlay';
@@ -20,6 +20,9 @@ import { PermissionsAndroid, Platform } from 'react-native';
 import { Dimensions } from 'react-native';
 import TabletLogin from '../tabletViews/TabletLogin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
+import NetInfo from '@react-native-community/netinfo';
 const isTablet = Dimensions.get('window').width >= 768;
 
 export default function LoginScreen() {
@@ -74,7 +77,15 @@ export default function LoginScreen() {
 
     useEffect(() => {
       const checkAuth = async () => {
-        const token = await AsyncStorage.getItem('authToken');
+        const state = await NetInfo.fetch();
+        if(state.isConnected){
+          const userobj = await getUser();
+          setEmail(userobj?.email || '');
+          setPassword(userobj?.password || '');
+         
+        }
+        else{
+          const token = await AsyncStorage.getItem('authToken');
         if (token) {
           setIsLoading(true);
 
@@ -85,6 +96,8 @@ export default function LoginScreen() {
           setIsLoading(false);
 
         }
+        }
+        
       };
     
       checkAuth();
@@ -108,17 +121,24 @@ export default function LoginScreen() {
           username: data.username,
           email: data.email,
           profile_picture: data.profile_picture,
+          password: password
+
         };
         await storeUserId(data.userID, data.token);
         await storeUser(userInfo);
         router.replace('/inApp/homeScreen');
+        await analytics().logEvent('login', {
+             name: data.username
+          });
         const permissionGranted = await requestUserPermission();
         if (permissionGranted) {
         const fcmToken = await messaging().getToken();
-        console.log("ahoj")
+        
         if (fcmToken) {
           await registerDeviceToken(fcmToken, data.token);
-           
+           await analytics().logEvent('token_registered', {
+             name: data.username
+          });
         }
 
         } else {

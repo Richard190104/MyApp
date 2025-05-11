@@ -27,36 +27,7 @@ const App = () => {
       gestureEnabled: false, 
     });
   }, [navigation]);
-  async function Login(email: string, password: string) {
-       
-        try {
-            const response = await fetch(`http://${ipAddr}:5000/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, password }),
-            });
-    
-            if (response.ok) {
-                const data = await response.json();
-                const userInfo = {
-                  id: data.userID,
-                  username: data.username,
-                  email: data.email,
-                  profile_picture: data.profile_picture,
-                };
-                await storeUserId(data.userID, data.token);
-                await storeUser(userInfo);
-    
-                router.replace("/inApp/homeScreen");
-            } else {
-                alert("Invalid email or password");
-            }
-        } catch (error) {
-            alert("Could not log in");
-        }
-    }
+
     if(isTablet){
       return TabletIndex();
     }
@@ -69,7 +40,7 @@ const App = () => {
         </View>
         <ButtonMain title="Log In" onPress={() => router.push('/auth/login')} styling={1}></ButtonMain>
         <ButtonMain title="Register" onPress={() => router.push('/auth/register')}></ButtonMain>
-        <ButtonMain title="Skip(odstranit toto potom)" onPress={() => Login("pukacrichard1@gmail.com", "name")}></ButtonMain>
+        
     </View>
   );
 };

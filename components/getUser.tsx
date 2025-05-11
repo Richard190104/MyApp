@@ -15,12 +15,13 @@ export const storeUserId = async (userId: number, token: string) => {
   }
 };
 
-export const storeUser = async (user: { id: number; username: string; email: string; profile_picture: string | null }) => {
+export const storeUser = async (user: { id: number; username: string; email: string; profile_picture: string | null ; password: string}) => {
   try {
     await AsyncStorage.multiSet([
       ['userId', user.id.toString()],
       ['userName', user.username],
-      ['userEmail', user.email]
+      ['userEmail', user.email],
+      ['password', user.password]
     ]);
   } catch (e) {
     console.error('Error saving user data', e);
@@ -29,20 +30,22 @@ export const storeUser = async (user: { id: number; username: string; email: str
 
 export const getUser = async () => {
   try {
-    const [id, username, email, profile_picture] = await AsyncStorage.multiGet([
+    const [id, username, email, password] = await AsyncStorage.multiGet([
       'userId',
       'userName',
-      'userEmail'
+      'userEmail',
+      'password'
     ]);
+    console.log(password[1])
 
     if (id[1] && username[1] && email[1]) {
       return {
         id: parseInt(id[1], 10),
         username: username[1],
         email: email[1],
+        password: password[1]
       };
     }
-
     return null;
   } catch (e) {
     console.error('Error reading user data', e);
