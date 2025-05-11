@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "354874501797",
-    "project_id": "myapp-d511b",
-    "storage_bucket": "myapp-d511b.firebasestorage.app"
+    "project_number": "940008370886",
+    "project_id": "mtaa2-c6f5e",
+    "storage_bucket": "mtaa2-c6f5e.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:354874501797:android:583dc4fd224e6cfc4e7b4c",
+        "mobilesdk_app_id": "1:940008370886:android:6ce734b59bc353b6859dc7",
         "android_client_info": {
           "package_name": "com.janporubsky.MyApp"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBmziJTQOE--IgWJioosSXyK0w_e3BQ3_8"
+          "current_key": "AIzaSyCJPrK4Dt45_4H876NPfua1EmtQY0OYUH0"
         }
       ],
       "services": {
