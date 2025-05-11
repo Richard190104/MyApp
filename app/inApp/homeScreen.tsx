@@ -15,8 +15,11 @@ import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import { BackgroundFetchStatus, BackgroundFetchResult } from 'expo-background-fetch';
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 const isTablet = Dimensions.get('window').width >= 768;
+
 
 const FETCH_TASK_NAME = 'USER_TASK_FETCH';
 
@@ -77,6 +80,11 @@ TaskManager.defineTask(FETCH_TASK_NAME, async () => {
 
     return BackgroundFetchResult.NewData;
   } catch (err) {
+      if (err instanceof Error) {
+    crashlytics().recordError(err);
+  } else {
+    crashlytics().recordError(new Error(String(err)));
+  }
     const duration = Date.now() - startTime;
     console.error(`[Metrics] ❌ Error during background task:`, err);
     console.log(`[Metrics] Duration before error: ${duration}ms`);
@@ -86,12 +94,15 @@ TaskManager.defineTask(FETCH_TASK_NAME, async () => {
 
 
 export default function HomeScreen() {  
+
   const router = useRouter();
   const { theme } = useTheme(); 
   const [user, setUser] = useState<number | null>(null);
   const [teams, setTeams] = useState<{ id: number; name: string; creator_id: number }[]>([]);
   const localParams = useLocalSearchParams();
-
+  useEffect(() => {
+    crashlytics().log('Opened Home Screen');
+  }, []);
   useEffect(() => {
     const fetchUserAndTeams = async () => {
       try {
@@ -134,6 +145,11 @@ export default function HomeScreen() {
                 console.warn("Unexpected response:", data);
               }
             } catch (error) {
+                if (error instanceof Error) {
+                  crashlytics().recordError(error);
+                } else {
+                  crashlytics().recordError(new Error(String(error)));
+                }
               console.error("Error fetching teams from backend:", error);
             }
           } else {
@@ -152,6 +168,11 @@ export default function HomeScreen() {
           console.warn("User ID or token was null");
         }
       } catch (error) {
+        if (error instanceof Error) {
+          crashlytics().recordError(error);
+        } else {
+          crashlytics().recordError(new Error(String(error)));
+        }
         console.error("Unexpected error in fetchUserAndTeams:", error);
       }
     };
@@ -178,7 +199,6 @@ export default function HomeScreen() {
   }, []);
 
   if (isTablet) return <TabletHomeScreen />;
-
   return (
     <SafeAreaView
       style={[styles.MainContainer, { backgroundColor: theme.background }]}

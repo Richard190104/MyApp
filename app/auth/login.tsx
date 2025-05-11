@@ -115,6 +115,7 @@ export default function LoginScreen() {
         const permissionGranted = await requestUserPermission();
         if (permissionGranted) {
         const fcmToken = await messaging().getToken();
+        console.log("ahoj")
         if (fcmToken) {
           await registerDeviceToken(fcmToken, data.token);
            
@@ -215,7 +216,7 @@ export default function LoginScreen() {
       />
     );
   }
-  return (
+    return (
     <View
       style={[styles.MainContainer, { backgroundColor: theme.background }]}
       accessible={true}
@@ -475,4 +476,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-

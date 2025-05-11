@@ -15,6 +15,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Calendar from 'expo-calendar';
 import { Platform, Linking } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 const monthNames = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -38,6 +40,9 @@ export default function CalendarScreen() {
     }
 
     const [taskMap, setTaskMap] = useState<Record<string, Task>>({});
+    useEffect(() => {
+      crashlytics().log('Opened Calendar');
+    }, []);
 
     const getTasks = async (userId: number) => {
       try {
@@ -76,6 +81,11 @@ export default function CalendarScreen() {
           }
         }
       } catch (error) {
+         if (error instanceof Error) {
+            crashlytics().recordError(error);
+          } else {
+            crashlytics().recordError(new Error(String(error)));
+          }
         console.error("Chyba pri získavaní úloh:", error);
       }
     };
@@ -143,6 +153,7 @@ export default function CalendarScreen() {
     const days = getDaysInMonth(year, month);
 
     async function syncCalendar() {
+
       async function getCalendarPermissions() {
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status === 'granted') {
@@ -164,7 +175,7 @@ export default function CalendarScreen() {
       console.error('No calendar found to add events.');
       return;
       }
-
+      
       for (const [dateKey, task] of Object.entries(taskMap)) {
         if (task.deadline) {
           const startOfDay = new Date(task.deadline);

@@ -13,6 +13,8 @@ import TabletProjectScreen from "../tabletViews/TabletProjectScreen";
 import NetInfo from '@react-native-community/netinfo';
 import io from 'socket.io-client';
 import { addToQueue } from "@/components/queue";
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 const TeamScreen = () => {
     const params = useLocalSearchParams();
     const [tasks, setTasks] = useState<{id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean, parent_task_id: number}[]>([]);
@@ -21,7 +23,9 @@ const TeamScreen = () => {
     const isTablet = Dimensions.get('window').width > 768;
     const socket = io(`http://${ipAddr}:5000`);
   const [newMessage, setNewMessage] = useState('');
-
+    useEffect(() => {
+    crashlytics().log('Opened Project');
+    }, []);
     function calculate_percentage(tasks: { completed: boolean }[]) {
         let completed = 0;
         tasks.forEach((task) => {
@@ -56,6 +60,11 @@ const TeamScreen = () => {
                     setProgress(calculate_percentage(sortedTasks));
                 }
             } catch (error) {
+                  if (error instanceof Error) {
+                    crashlytics().recordError(error);
+                } else {
+                    crashlytics().recordError(new Error(String(error)));
+                }
                 console.error("Error fetching project tasks:", error);
             }
         }
@@ -138,6 +147,11 @@ const modifyTaskStatus = async (task: any) => {
       }
       
     } catch (error) {
+        if (error instanceof Error) {
+            crashlytics().recordError(error);
+        } else {
+            crashlytics().recordError(new Error(String(error)));
+        }
       console.error('Error updating task online:', error);
     }
   } else {
@@ -210,8 +224,7 @@ const modifyTaskStatus = async (task: any) => {
             />
         );
     }
-
-    return (
+        return (
     <SafeAreaView
         style={[styles.MainContainer, { backgroundColor: theme.background }]}
         accessible={true}

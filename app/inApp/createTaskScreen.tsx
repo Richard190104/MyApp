@@ -16,6 +16,8 @@ import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as BackgroundFetch from 'expo-background-fetch';
 import { BackgroundFetchStatus, BackgroundFetchResult } from 'expo-background-fetch';
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 const TASK_NAME = 'BACKGROUND_FETCH_DEADLINE_CHECK';
 
@@ -59,8 +61,13 @@ TaskManager.defineTask(TASK_NAME, async () => {
 
     return BackgroundFetchResult.NewData;
   } catch (err) {
+    if (err instanceof Error) {
+    crashlytics().recordError(err);
+  } else {
+    crashlytics().recordError(new Error(String(err)));
+  }
     const duration = Date.now() - startTime;
-    console.error(`[Metrics] ❌ Error in ${TASK_NAME}:`, err);
+    console.error(`[Metrics] Error in ${TASK_NAME}:`, err);
     console.log(`[Metrics] Duration before error: ${duration}ms`);
     return BackgroundFetchResult.Failed;
   }
@@ -77,12 +84,17 @@ async function registerBackgroundFetch() {
         stopOnTerminate: false,
         startOnBoot: true,
       });
-      console.log('✅ Background fetch registered');
+      console.log(' Background fetch registered');
     } catch (err) {
-      console.error('❌ Failed to register background task:', err);
+      if (err instanceof Error) {
+      crashlytics().recordError(err);
+    } else {
+      crashlytics().recordError(new Error(String(err)));
+    }
+      console.error(' Failed to register background task:', err);
     }
   } else {
-    console.warn('❌ Background fetch not available:', status);
+    console.warn(' Background fetch not available:', status);
   }
 }
 
@@ -135,7 +147,12 @@ export default function CreateProjectScreen() {
     })();
   }, []);
 
+  useEffect(() => {
+    crashlytics().log('Opened Create Task Screen');
+    }, []);
+
   const handleCreateTask = async () => {
+    crashlytics().log('Attempting to create task');
     setLoading(true);
     const userID = await getUserId();
     const assignedToId = items.find(item => item.label === assign)?.id;
@@ -177,6 +194,14 @@ export default function CreateProjectScreen() {
         });
 
         if (response.ok) {
+          await analytics().logEvent('task_created', {
+            name: taskName,
+            deadline: deadline,
+            description: description,
+            assign: assignedToId,
+            project_id: params.project_id,
+            parent_task_id: params.parent_id || null,
+          });
           const existing = await AsyncStorage.getItem('tasks');
           const existingTasks = existing ? JSON.parse(existing) : [];
           await AsyncStorage.setItem('tasks', JSON.stringify([...existingTasks, newTask]));
@@ -191,6 +216,11 @@ export default function CreateProjectScreen() {
           setLoading(false);
         }
       } catch (error) {
+        if (error instanceof Error) {
+          crashlytics().recordError(error);
+        } else {
+          crashlytics().recordError(new Error(String(error)));
+        }
         Alert.alert('Error', 'Something went wrong!');
         console.error(error);
         setLoading(false);
@@ -222,8 +252,7 @@ export default function CreateProjectScreen() {
   }
 
   if (isTablet) return <CreateProjectScreenTablet />;
-
-  return (
+   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
       accessible={true}
@@ -375,4 +404,3 @@ const styles = StyleSheet.create({
   createButtonText: { fontSize: 16, fontWeight: 'bold', color: 'white' },
   dropdown: { borderRadius: 4, paddingHorizontal: 12, borderWidth: 1, width: '90%', alignSelf: 'center' },
   dropdownContainer: { width: '90%', alignSelf: 'center', zIndex: 1000 },
-});

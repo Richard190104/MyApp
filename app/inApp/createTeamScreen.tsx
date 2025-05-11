@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,8 @@ import { Dimensions } from 'react-native';
 import TabletCreateTeamScreen from '../tabletViews/TabletCreateTeam';
 import NetInfo from '@react-native-community/netinfo';
 import { addToQueue, getQueue } from '@/components/queue';
-
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 const isTablet = Dimensions.get('window').width >= 768;
 
 export default function CreateTeamScreen() {
@@ -39,11 +40,17 @@ export default function CreateTeamScreen() {
   });
   const [isLoading, setIsLoading] = useState(false);
 const generateLocalId = () => {
-  const timestamp = Date.now().toString(36); // čas ako základ 36 (skráti číslo)
-  const random = Math.floor(Math.random() * 1e6).toString(36); // náhodné číslo
+  const timestamp = Date.now().toString(36);
+  const random = Math.floor(Math.random() * 1e6).toString(36); 
   return `local-${timestamp}-${random}`;
 };
+
+useEffect(() => {
+  crashlytics().log('Opened Create Team Screen');
+}, []);
   const handleCreateTeam = async () => {
+    crashlytics().log('Attempting to create team');
+
     const userID = await getUserId();
     const nameEmpty = !teamName.trim();
     const descEmpty = !teamDescription.trim();
@@ -80,6 +87,11 @@ const generateLocalId = () => {
         
 
         if (response.ok) {
+          await analytics().logEvent('project_created', {
+             name: teamName,
+              description: teamDescription,
+              user_id: userID,
+          });
           setTimeout(() => {
             router.replace({ pathname:'/inApp/homeScreen', params: { team_name: teamName, onTeam: "1" }});
             setIsLoading(false);
@@ -128,6 +140,11 @@ const generateLocalId = () => {
       }
       
     } catch (error) {
+      if (error instanceof Error) {
+          crashlytics().recordError(error);
+        } else {
+          crashlytics().recordError(new Error(String(error)));
+        }
       setIsLoading(false);
       Alert.alert('Error', 'Something went wrong!');
       console.error(error);
@@ -145,7 +162,7 @@ const generateLocalId = () => {
   if(isTablet) {
     return <TabletCreateTeamScreen teamName={teamName} setTeamName={setTeamName} teamDescription={teamDescription} setTeamDescription={setTeamDescription} memberEmail={memberEmail} setMemberEmail={setMemberEmail} members={members} setMembers={setMembers} handleCreateTeam={handleCreateTeam} errors={errors} isLoading={isLoading}/>
   }
-  return (
+    return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
       accessible={true}

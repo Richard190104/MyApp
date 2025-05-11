@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useTheme } from "@/components/ThemeContext";
 
-// ✅ Rozšírenie typu ButtonStyle o AccessibilityProps
+
 type ButtonStyle = {
   title: string;
   onPress: () => void;
@@ -24,7 +24,7 @@ const ButtonMain = (props: ButtonStyle) => {
     onPress,
     styling,
     disabled,
-    ...accessibilityProps // ✅ odchytenie zvyšných props
+    ...accessibilityProps 
   } = props;
 
   return (
@@ -37,7 +37,7 @@ const ButtonMain = (props: ButtonStyle) => {
           styling === 1 ? styles.primaryButton : styles.secondaryButton,
           { backgroundColor: theme.primary },
         ]}
-        {...accessibilityProps} // ✅ prenesenie všetkých accessibility props
+        {...accessibilityProps} 
       >
         <Text style={[styles.text, { color: theme.text }]}>{title}</Text>
       </TouchableOpacity>
