@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -21,6 +21,8 @@ import TabletCreateProjectScreen from '../tabletViews/TabletCreateProject';
 import io from 'socket.io-client';
 import NetInfo from '@react-native-community/netinfo';
 import { addToQueue } from '@/components/queue';
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 export default function CreateProjectScreen() {
   const isTablet = Dimensions.get('window').width >= 768;
@@ -58,7 +60,14 @@ export default function CreateProjectScreen() {
       content: newMessage,
     });
   }
+
+  useEffect(() => {
+    crashlytics().log('Opened Create Project Screen');
+  }, []);
+
   const handleCreateProject = async () => {
+    crashlytics().log('Attempting to create project');
+
     const userID = await getUserId();
     const nameEmpty = !projectName.trim();
     const descEmpty = !deadline.trim();
@@ -69,6 +78,7 @@ export default function CreateProjectScreen() {
     }
 
     try {
+
       setIsLoading(true);
       const state = await NetInfo.fetch();
       if(state.isConnected){
@@ -97,6 +107,11 @@ export default function CreateProjectScreen() {
         const data = await response.json();
 
         if (response.ok) {
+           await analytics().logEvent('project_created', {
+             name: projectName,
+              deadline: deadline,
+              team_id: params.team_id,
+          });
           setTimeout(() => {
               if (isTablet) {
               router.replace({
@@ -197,6 +212,11 @@ export default function CreateProjectScreen() {
       }
       
     } catch (error) {
+      if (error instanceof Error) {
+          crashlytics().recordError(error);
+        } else {
+          crashlytics().recordError(new Error(String(error)));
+        }
       setIsLoading(false);
       Alert.alert('Error', 'Something went wrong!');
       console.error(error);

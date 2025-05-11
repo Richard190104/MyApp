@@ -9,7 +9,7 @@ import { ipAddr } from "@/components/backendip";
 import { useTheme } from '@/components/ThemeContext';
 import {Dimensions} from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
-
+import crashlytics from '@react-native-firebase/crashlytics';
 const TeamScreen = (props: any) => {
     const localParams = useLocalSearchParams();
     const width = Dimensions.get('window').width
@@ -27,6 +27,10 @@ const TeamScreen = (props: any) => {
     const [newMemberEmail,setNewMemberEmail] = useState("");
     const [showRoleOptions, setShowRoleOptions] = useState<{ [key: number]: boolean }>({});
     const { theme, toggleTheme } = useTheme();
+
+    useEffect(() => {
+      crashlytics().log('Opened Team Screen');
+    }, []);
 
     useEffect(() => {
       console.log(localParams.team_id)
@@ -72,6 +76,11 @@ const TeamScreen = (props: any) => {
               }
             }
           } catch (error) {
+              if (error instanceof Error) {
+                crashlytics().recordError(error);
+              } else {
+                crashlytics().recordError(new Error(String(error)));
+              }
             console.error("Error fetching team names:", error);
 
           }
@@ -122,6 +131,11 @@ const TeamScreen = (props: any) => {
               
             }
           } catch (error) {
+            if (error instanceof Error) {
+                crashlytics().recordError(error);
+              } else {
+                crashlytics().recordError(new Error(String(error)));
+              }
             console.error("Error fetching team members:", error);
           }
         }
@@ -191,6 +205,11 @@ const TeamScreen = (props: any) => {
               alert("Failed to remove team member");
               }
             } catch (error) {
+              if (error instanceof Error) {
+                crashlytics().recordError(error);
+              } else {
+                crashlytics().recordError(new Error(String(error)));
+              }
                 console.error("Error removing team member:", error);
                 alert("Error removing team member");
             }
@@ -227,6 +246,11 @@ const TeamScreen = (props: any) => {
                 alert("Failed to send invite");
             }
         } catch (error) {
+          if (error instanceof Error) {
+                crashlytics().recordError(error);
+              } else {
+                crashlytics().recordError(new Error(String(error)));
+              }
             alert("Error sending invite");
         }
     }
@@ -262,6 +286,11 @@ const TeamScreen = (props: any) => {
                 alert("Failed to update user role.");
             }
         } catch (error) {
+          if (error instanceof Error) {
+                crashlytics().recordError(error);
+              } else {
+                crashlytics().recordError(new Error(String(error)));
+              }
             console.error("Error updating user role:", error);
             alert("Error updating user role.");
         }

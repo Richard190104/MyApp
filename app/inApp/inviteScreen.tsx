@@ -12,6 +12,8 @@ import { useTheme } from '@/components/ThemeContext';
 import InviteScreenTablet from '../tabletViews/TabletChatScreen';
 import { Dimensions } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 export default function InviteScreen() {
     const router = useRouter();
@@ -24,6 +26,12 @@ export default function InviteScreen() {
     const [user, setUser] = useState<number | null>(null);
     const [teams, setTeams] = useState<
         { team_id: number; team_name: string}[]>([]);
+
+
+    useEffect(() => {
+  crashlytics().log('Opened Chats screen');
+}, []);
+
 
     useEffect(() => {
        
@@ -58,6 +66,11 @@ export default function InviteScreen() {
                     setInvites([]);
                 }
             } catch (error) {
+                if (error instanceof Error) {
+                crashlytics().recordError(error);
+                    } else {
+                        crashlytics().recordError(new Error(String(error)));
+                    }
                 console.error("Failed to fetch invitations", error);
                 setInvites([]);
             }
@@ -90,6 +103,11 @@ export default function InviteScreen() {
                 await AsyncStorage.setItem(teamsKey, JSON.stringify(teams));
                 }
             } catch (error) {
+                if (error instanceof Error) {
+                crashlytics().recordError(error);
+            } else {
+                crashlytics().recordError(new Error(String(error)));
+            }
                 console.error("Error fetching team names:", error);
             }
             } else {
@@ -108,6 +126,11 @@ export default function InviteScreen() {
                 console.warn("No cached teams found.");
                 }
             } catch (error) {
+                if (error instanceof Error) {
+                crashlytics().recordError(error);
+                } else {
+                    crashlytics().recordError(new Error(String(error)));
+                }
                 console.error("Error loading teams from cache:", error);
             }
             }
@@ -123,6 +146,8 @@ export default function InviteScreen() {
     }, []);
 
     const handleAccept = async (inviteId: number) => {
+        crashlytics().log('Attempting to accept request');
+
         try {
             const token = await AsyncStorage.getItem('authToken');
             if (!token) {
@@ -147,11 +172,17 @@ export default function InviteScreen() {
                 alert(data.error || 'Failed to accept invitation.');
             }
         } catch (error) {
+            if (error instanceof Error) {
+                crashlytics().recordError(error);
+            } else {
+                crashlytics().recordError(new Error(String(error)));
+            }
             console.error('Error accepting invite:', error);
         }
     };
     
     const handleDecline = async (inviteId: number) => {
+        crashlytics().log('Attempting to decline request');
         try {
             const token = await AsyncStorage.getItem('authToken');
             if (!token) {
@@ -176,6 +207,11 @@ export default function InviteScreen() {
                 alert(data.error || 'Failed to decline invitation.');
             }
         } catch (error) {
+              if (error instanceof Error) {
+                crashlytics().recordError(error);
+            } else {
+                crashlytics().recordError(new Error(String(error)));
+            }
             console.error('Error declining invite:', error);
         }
     };

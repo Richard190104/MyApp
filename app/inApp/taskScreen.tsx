@@ -17,7 +17,7 @@ import { useWindowDimensions } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import io from 'socket.io-client';
 import { addToQueue } from "@/components/queue";
-
+import crashlytics from '@react-native-firebase/crashlytics';
 const TaskScreen = () => {
   const { width } = useWindowDimensions();
 
@@ -116,6 +116,11 @@ const TaskScreen = () => {
             setAssignedMember('--');
           }
         } catch (err) {
+            if (err instanceof Error) {
+              crashlytics().recordError(err);
+            } else {
+              crashlytics().recordError(new Error(String(err)));
+            }
           console.error('Failed to load team members', err);
         } finally {
           setIsLoading(false);
@@ -149,6 +154,11 @@ const TaskScreen = () => {
               console.log("Project tasks fetched and stored locally.");
             }
           } catch (error) {
+            if (error instanceof Error) {
+              crashlytics().recordError(error);
+            } else {
+              crashlytics().recordError(new Error(String(error)));
+            }
             console.error("Error fetching project tasks:", error);
           }
         } else {
@@ -169,6 +179,11 @@ const TaskScreen = () => {
               setTasks([]);
             }
           } catch (error) {
+            if (error instanceof Error) {
+              crashlytics().recordError(error);
+            } else {
+              crashlytics().recordError(new Error(String(error)));
+            }
             console.error("Error loading tasks from cache:", error);
           }
         }
@@ -249,6 +264,11 @@ async function handleCheckboxPress(taskId: number, completed: boolean, name: Str
 
     }
   } catch (error) {
+    if (error instanceof Error) {
+              crashlytics().recordError(error);
+            } else {
+              crashlytics().recordError(new Error(String(error)));
+            }
     console.error('Error toggling task status:', error);
   }
 }
@@ -312,6 +332,11 @@ async function handleCheckboxPress(taskId: number, completed: boolean, name: Str
       setAssignedMember(assignedMber ? assignedMber.username : '--');
 
     } catch (error) {
+      if (error instanceof Error) {
+        crashlytics().recordError(error);
+      } else {
+        crashlytics().recordError(new Error(String(error)));
+      }
       console.error('Error modifying task assignment:', error);
     }
   }

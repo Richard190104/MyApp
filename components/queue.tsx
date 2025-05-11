@@ -3,6 +3,8 @@ import { ipAddr } from "@/components/backendip";
 import NetInfo from '@react-native-community/netinfo';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 export type QueuedRequest = {
   url: string;
@@ -36,8 +38,8 @@ export const processQueue = async () => {
   let queue = getQueue();
 
   for (let i = 0; i < queue.length; i++) {
-    const { url, method, body, headers } = queue[i];
 
+    const { url, method, body, headers } = queue[i];
     try {
       const response = await fetch(url, {
         method,
@@ -49,13 +51,21 @@ export const processQueue = async () => {
       });
 
       if (response.ok) {
+        crashlytics().log('Syncing data...');
+
         const data = await response.json();
 
         if (url.includes('/createTeam') && body?.id?.startsWith('local-') && data.id) {
+           await analytics().logEvent('project_created', {
+              name: body.teamName,
+              description: body.teamDescription,
+              user_id: body.userID,
+          });
           const localId = body.id;
           const realId = data.id;
-
+          
           queue = queue.map((req) => {
+            
             const newBody = { ...req.body };
 
             if (newBody.team_id === localId) {
@@ -88,16 +98,25 @@ export const processQueue = async () => {
             }
         }
         if (url.includes('/createProject') && body?.id?.startsWith('local-') && data.id) {
+            await analytics().logEvent('project_created', {
+              name: body.projectName,
+              description: body.deadline,
+              user_id: body.team_id,
+          });
             const localId = body.id;
             const realId = data.id;
-
-        queue = queue.map((req) => {
+          queue = queue.map((req) => {
             const newBody = { ...req.body };
+            
 
-            if (newBody.id === localId) {
+            if (newBody.id == localId) {
             newBody.id = realId;
             }
 
+            if (String(newBody.project_id) === localId){
+              newBody.project_id = realId;
+            }
+          
             return {
             ...req,
             body: newBody,
@@ -122,20 +141,28 @@ export const processQueue = async () => {
         }
 
         if (url.includes('/createTask') && body?.id?.startsWith('local-') && data.task_id) {
-            const localId = body.id;
+          await analytics().logEvent('task_created', {
+            name: body.taskName,
+            deadline: body.deadline,
+            description: body.description,
+            assign: body.assignedToId,
+            project_id: body.project_id,
+            parent_task_id: body.parent_id || null,
+          });  
+          const localId = body.id;
             const realId = data.task_id;
 
             queue = queue.map((req) => {
                 const newBody = { ...req.body };
 
-                if (newBody.parent_task_id === localId) {
+                if (newBody.parent_task_id == localId) {
                 newBody.parent_task_id = realId;
                 }
 
-                if (newBody.id === localId) {
+                if (newBody.id == localId) {
                 newBody.id = realId;
                 }
-
+               
                 return {
                 ...req,
                 body: newBody,
@@ -165,10 +192,10 @@ export const processQueue = async () => {
             }
             }
 
-
-        removeRequestAt(i);
       } else {
         console.warn(`Request failed: ${url}`);
+        crashlytics().recordError(new Error(`Request failed: ${url}`));
+
       }
     } catch (error) {
       console.error('Sync error:', error);
@@ -183,12 +210,11 @@ let hasSynced = false;
 export const startNetworkListener = () => {
   const unsubscribe = NetInfo.addEventListener(state => {
     if (state.isConnected && !hasSynced) {
-      hasSynced = true; // prevent repeat execution
+      hasSynced = true; 
 
       const queue = getQueue();
-      if (queue.length === 0) return; // nothing to sync
+      if (queue.length === 0) return; 
 
-      console.log('Queue:', queue);
 
       Alert.alert(
         "Connection Restored",

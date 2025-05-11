@@ -21,6 +21,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomBar from '@/components/bottomBar';
 import { useTheme } from '@/components/ThemeContext';
 import NetInfo from '@react-native-community/netinfo';
+import analytics from '@react-native-firebase/analytics';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 const socket = io(`http://${ipAddr}:5000`);
 
@@ -37,6 +39,12 @@ const ChatScreen = () => {
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
   const limit = 20;
+
+  useEffect(() => {
+   
+    crashlytics().log('Opened chat');
+
+  }, []);
 
   const fetchMessages = async (scrollToBottom = false) => {
     if (loadingMore || !hasMore) return;
@@ -70,6 +78,11 @@ const ChatScreen = () => {
       setHasMore(false);
       }
     } catch (err) {
+        if (err instanceof Error) {
+          crashlytics().recordError(err);
+        } else {
+          crashlytics().recordError(new Error(String(err)));
+        }
       console.error("Error fetching messages:", err);
     }
 
@@ -106,7 +119,11 @@ const ChatScreen = () => {
       team_id: teamID,
       content: newMessage,
     });
-
+    await analytics().logEvent('message_sent', {
+      sender_id: userID,
+      team_id: teamID,
+      content: newMessage,
+  });
     setNewMessage('');
   };
 
