@@ -17,14 +17,16 @@
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
     "@react-native-async-storage/async-storage": "^2.1.2",
-    "@react-native-community/netinfo": "11.4.1",
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-native-community/slider": "^4.5.6",
+    "@react-native-firebase/analytics": "^22.1.0",
     "@react-native-firebase/app": "^22.1.0",
+    "@react-native-firebase/crashlytics": "^22.1.0",
     "@react-native-firebase/messaging": "^22.1.0",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "expo": "^53.0.0",
-    "expo-background-task": "~0.2.6",
+    "expo-background-fetch": "~13.1.5",
     "expo-blur": "~14.1.4",
     "expo-calendar": "~14.1.4",
     "expo-constants": "~17.1.5",
@@ -53,8 +55,7 @@
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.13.5",
     "reanimated-color-picker": "^4.0.1",
-    "socket.io-client": "^4.8.1",
-    "expo-background-fetch": "~13.1.5"
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

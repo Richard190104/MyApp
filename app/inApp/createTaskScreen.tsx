@@ -404,3 +404,4 @@ const styles = StyleSheet.create({
   createButtonText: { fontSize: 16, fontWeight: 'bold', color: 'white' },
   dropdown: { borderRadius: 4, paddingHorizontal: 12, borderWidth: 1, width: '90%', alignSelf: 'center' },
   dropdownContainer: { width: '90%', alignSelf: 'center', zIndex: 1000 },
+})

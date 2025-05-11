@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "940008370886",
+    "project_id": "mtaa2-c6f5e",
+    "storage_bucket": "mtaa2-c6f5e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:940008370886:android:6ce734b59bc353b6859dc7",
+        "android_client_info": {
+          "package_name": "com.janporubsky.MyApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJPrK4Dt45_4H876NPfua1EmtQY0OYUH0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
