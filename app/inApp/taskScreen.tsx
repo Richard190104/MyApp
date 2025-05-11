@@ -26,7 +26,7 @@ const TaskScreen = () => {
   const [assignedMember, setAssignedMember] = useState<string | null>(null);
   const [tasks, setTasks] = useState<{id: number; name: string; description: string; assigned_to: number; deadline: Date; completed: boolean, parent_task_id: number}[]>([]);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const taskId = Number(Array.isArray(params.task_id) ? params.task_id[0] : params.task_id);
+  const taskId = (Array.isArray(params.task_id) ? params.task_id[0] : params.task_id);
   const [showRoleOptions, setShowRoleOptions] = useState<{ [key: string]: boolean }>({});
   const [members, setMembers] = useState<{ user_id: number; username: string; role: string }[]>([]);
   const { theme, toggleTheme } = useTheme();
@@ -293,10 +293,10 @@ async function handleCheckboxPress(taskId: number, completed: boolean, name: Str
     );
   };
 
-  const mainTask = tasks.find((t) => t.id === taskId);
+  const mainTask = tasks.find((t) => String(t.id) == String(taskId));
 
 
-  async function modifyTaskAssignedTo(taskId: number, assignedTo: number) {
+  async function modifyTaskAssignedTo(taskId: any, assignedTo: number) {
     try {
       const token = await AsyncStorage.getItem('authToken');
       if (!token) {
