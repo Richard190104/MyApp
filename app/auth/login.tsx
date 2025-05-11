@@ -115,6 +115,7 @@ export default function LoginScreen() {
         const permissionGranted = await requestUserPermission();
         if (permissionGranted) {
         const fcmToken = await messaging().getToken();
+        console.log("ahoj")
         if (fcmToken) {
           await registerDeviceToken(fcmToken, data.token);
            

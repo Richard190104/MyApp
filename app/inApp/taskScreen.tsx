@@ -46,6 +46,37 @@ const TaskScreen = () => {
     
     Speech.speak(text, { language: 'en-US', pitch: 1.0, rate: 1.0 });
   };
+
+  const speakDescription = () => {
+    const taskName = Array.isArray(params.task_name) ? params.task_name[0] : (params.task_name as string || '');
+    const deadlineRaw = Array.isArray(params.task_deadline) ? params.task_deadline[0] : (params.task_deadline as string || '');
+    const assignedUser = assignedMember || 'no one';
+    const descriptionText = Array.isArray(params.task_description)
+      ? params.task_description[0]
+      : (params.task_description as string || '');
+
+    let deadlineReadable = deadlineRaw;
+    if (deadlineRaw) {
+      const deadlineDate = new Date(deadlineRaw);
+      deadlineReadable = deadlineDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    }
+
+    const text = `This is ${taskName} task. Task is due on ${deadlineReadable}, and is assigned to ${assignedUser}. Its description is: ${descriptionText}`;
+
+    Speech.stop();
+    Speech.speak(text, {
+      language: 'en-US',
+      pitch: 1.0,
+      rate: 1.0,
+    });
+  };
+
+
+
   const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
 
@@ -394,8 +425,17 @@ async function handleCheckboxPress(taskId: number, completed: boolean, name: Str
       <Text style={[styles.subsubHeader, { color: theme.text, marginBottom: 0 }]}>Deadline: </Text>
     </View>
     <Text style={[styles.description, { color: theme.text, fontSize: 12 , marginVertical: 0 }]}>{params.task_deadline}</Text>
-    <View style={{ width: '100%', justifyContent: 'flex-start', alignItems: 'flex-start' }}>
+    <View style={{ 
+      flexDirection: 'row', 
+      justifyContent: 'space-between', 
+      alignItems: 'center', 
+      width: '100%',
+      marginBottom: 10
+    }}>
       <Text style={[styles.subHeader, { color: theme.text }]}>Description</Text>
+      <TouchableOpacity onPress={speakDescription}>
+        <Ionicons name="volume-high" size={24} color={theme.primary} />
+      </TouchableOpacity>
     </View>
     <Text style={[styles.description, { color: theme.text }]}>{params.task_description}</Text>
 
