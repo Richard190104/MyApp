@@ -52,9 +52,7 @@ export default function TopBar() {
                             <Text style={[styles.ItemText, { color: theme.text }]}>Manage Profile</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]}>
-                            <Text style={[styles.ItemText, { color: theme.text }]}>Notifications</Text>
-                        </TouchableOpacity>
+                        
 
                         <TouchableOpacity style={[styles.menuItem, { backgroundColor: theme.card }]} onPress={() => {router.push('/inApp/themesManagement')}}>
                             <Text style={[styles.ItemText, { color: theme.text }]}>Dark Mode</Text>
